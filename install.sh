@@ -19,6 +19,7 @@ echo "Stowing packages..."
 stow zsh
 stow config
 stow bin
+stow aerospace
 
 # Add source line to .zshrc if not present
 SOURCE_LINE="source ~/.zsh/shared.zsh"
