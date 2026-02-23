@@ -1,0 +1,18 @@
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Backup files
+*.tar.gz
+*.backup
+*.bak
+
+# Node modules (globalne dla całego repo)
+**/node_modules/
+
+# Zsh
+.zcompdump*
+
+# Local config overrides (nie commitujemy secrets)
+config/.config/github-copilot/
+config/.config/configstore/

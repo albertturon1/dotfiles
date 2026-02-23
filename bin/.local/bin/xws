@@ -1,0 +1,420 @@
+#!/usr/bin/env bash
+# ==========================================
+# Strict Mode:
+# -e: Exit immediately if a command exits with a non-zero status.
+# -u: Treat unset variables as an error.
+# -o pipefail: Pipeline fails if any command within it fails.
+# ==========================================
+set -euo pipefail
+
+# ==========================================
+# Globals & Constants
+# ==========================================
+readonly WT_SUFFIX="-worktrees"
+
+# These global state variables are populated by _resolve_paths()
+REPO_ROOT=""
+WT_ROOT=""
+BRANCH_NAME=""
+FOLDER_NAME=""
+WT_PATH=""
+
+# ==========================================
+# Utilities
+# ==========================================
+err() {
+  echo -e "\033[31mError:\033[0m $*" >&2
+}
+
+die() {
+  err "$@"
+  exit 1
+}
+
+info() {
+  echo -e "\033[34mInfo:\033[0m $*"
+}
+
+_attach_tmux() {
+  local session="$1"
+  if [[ -n "${TMUX:-}" ]]; then
+    tmux switch-client -t "$session"
+  else
+    tmux attach -t "$session"
+  fi
+}
+
+# ==========================================
+# Core Functions
+# ==========================================
+show_help() {
+  cat << EOF
+xws - tmux workspace and git worktree manager
+
+Usage: xws <command> [options]
+
+Commands:
+  session [name]                Create/attach tmux session
+  worktree create <feature>     Create new worktree and open session
+  worktree open <feature>       Open existing worktree in session
+  worktree remove <feature>     Remove worktree (not main)
+  worktree list                 List all worktrees
+  help                          Show this help
+
+Examples:
+  xws session                   # Session named after current directory
+  xws session my-project        # Session named 'my-project'
+  xws worktree create feature-x # Create worktree for feature-x
+  xws worktree open feature-x   # Open existing worktree
+  xws worktree list             # Show all worktrees
+EOF
+}
+
+show_session_help() {
+  cat << EOF
+xws session - Create or attach to tmux session
+
+Usage: xws session [session-name]
+
+Arguments:
+  session-name    Name of tmux session (default: current directory name)
+
+Creates 3 windows:
+  1. nvim     - Neovim editor
+  2. opencode - OpenCode AI assistant
+  3. terminal - Regular shell
+EOF
+}
+
+show_worktree_help() {
+  cat << EOF
+xws worktree - Manage git worktrees for feature development
+
+Usage: xws worktree <command> [options]
+
+Commands:
+  create <feature> [--name <session>]  Create worktree and open session
+  open <feature> [--name <session>]    Open existing worktree in session
+  remove <feature> [-f|--force]        Remove worktree (main is protected)
+  list                                 List all worktrees
+
+Examples:
+  xws worktree create feat-x --name fx
+EOF
+}
+
+cmd_session() {
+  local session_name="${1:-$(basename "$PWD")}"
+
+  if [[ "$session_name" == "-h" || "$session_name" == "--help" || "$session_name" == "help" ]]; then
+    show_session_help
+    return 0
+  fi
+
+  # Attach if session already exists
+  if tmux has-session -t "$session_name" 2>/dev/null; then
+    _attach_tmux "$session_name"
+    return 0
+  fi
+
+  tmux new-session -d -s "$session_name" -n nvim \
+    "$SHELL" -c "nvim .; exec $SHELL"
+  
+  tmux new-window -t "$session_name" -n opencode \
+    "$SHELL" -c "opencode; exec $SHELL"
+  
+  tmux new-window -t "$session_name" -n terminal
+
+  _attach_tmux "$session_name"
+}
+
+_resolve_paths() {
+  local feature_name="$1"
+  
+  if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    die "Not a git repository."
+  fi
+
+  local main_repo_path
+  main_repo_path=$(git worktree list --porcelain | head -n1 | cut -d ' ' -f 2)
+  
+  if [[ -z "$main_repo_path" ]]; then
+    die "Could not determine main repository root."
+  fi
+
+  local project_name
+  project_name=$(basename "$main_repo_path")
+  
+  local parent_dir
+  parent_dir=$(dirname "$main_repo_path")
+  
+  # Set global state
+  REPO_ROOT="$main_repo_path"
+  WT_ROOT="${parent_dir}/${project_name}${WT_SUFFIX}"
+  BRANCH_NAME="$feature_name"
+  FOLDER_NAME="${feature_name//\//_}"
+  WT_PATH="${WT_ROOT}/${FOLDER_NAME}"
+}
+
+_detect_install_cmd() {
+  local target_path="$1"
+  local pkg_json="${target_path}/package.json"
+  
+  if [[ ! -f "$pkg_json" ]]; then
+    return 0
+  fi
+
+  # Safely parse packageManager. `|| true` prevents pipefail from killing the script.
+  local pm_field
+  pm_field=$(grep -o '"packageManager": *"[^"]*"' "$pkg_json" 2>/dev/null | cut -d '"' -f 4 || true)
+  
+  if [[ -n "$pm_field" ]]; then
+    case "$pm_field" in
+      bun*)  echo "bun install"; return 0 ;;
+      yarn*) echo "yarn install"; return 0 ;;
+      pnpm*) echo "pnpm install"; return 0 ;;
+      npm*)  echo "npm install"; return 0 ;;
+    esac
+  fi
+
+  if [[ -f "${target_path}/bun.lock" || -f "${target_path}/bun.lockb" ]]; then
+    echo "bun install"
+  elif [[ -f "${target_path}/pnpm-lock.yaml" ]]; then
+    echo "pnpm install"
+  elif [[ -f "${target_path}/yarn.lock" ]]; then
+    echo "yarn install"
+  elif [[ -f "${target_path}/package-lock.json" ]]; then
+    echo "npm install"
+  else
+    echo "bun install"
+  fi
+}
+
+_sync_configs() {
+  local target="$1"
+  
+  [[ -f "${REPO_ROOT}/.env" ]] && cp "${REPO_ROOT}/.env" "${target}/.env" || true
+  [[ -d "${REPO_ROOT}/.opencode" ]] && cp -r "${REPO_ROOT}/.opencode" "${target}/" || true
+}
+
+_check_uncommitted() {
+  local wt_path="$1"
+  if [[ -d "$wt_path" ]]; then
+    if [[ -n $(cd "$wt_path" && git status --porcelain 2>/dev/null || true) ]]; then
+      return 0
+    fi
+  fi
+  return 1
+}
+
+_parse_feature_and_session() {
+  # Helper to DRY up argument parsing for create/open
+  FEATURE_NAME=""
+  SESSION_NAME=""
+  
+  while [[ "$#" -gt 0 ]]; do
+    case "$1" in
+      --name)
+        SESSION_NAME="${2:-}"
+        shift 2
+        ;;
+      *)
+        FEATURE_NAME="$1"
+        shift
+        ;;
+    esac
+  done
+
+  if [[ -z "$FEATURE_NAME" ]]; then
+    return 1
+  fi
+  
+  [[ -z "$SESSION_NAME" ]] && SESSION_NAME="$FEATURE_NAME"
+  return 0
+}
+
+wt_cmd_create() {
+  local FEATURE_NAME SESSION_NAME
+  if ! _parse_feature_and_session "$@"; then
+    die "Usage: xws worktree create <feature> [--name <session-name>]"
+  fi
+  
+  _resolve_paths "$FEATURE_NAME"
+  
+  if [[ -d "$WT_PATH" ]]; then
+    die "Worktree already exists: $WT_PATH\nUse: xws worktree open $FEATURE_NAME"
+  fi
+
+  mkdir -p "$WT_ROOT"
+
+  if ! git show-ref --verify --quiet "refs/heads/${BRANCH_NAME}"; then
+    info "Creating branch: $BRANCH_NAME"
+    git branch "$BRANCH_NAME"
+  fi
+
+  info "Creating worktree: $WT_PATH"
+  git worktree add "$WT_PATH" "$BRANCH_NAME"
+
+  _sync_configs "$WT_PATH"
+  
+  cd "$WT_PATH" || die "Failed to enter worktree directory: $WT_PATH"
+  
+  local install_cmd
+  install_cmd=$(_detect_install_cmd "$WT_PATH")
+  
+  if [[ -n "$install_cmd" ]]; then
+    info "Installing dependencies: $install_cmd"
+    eval "$install_cmd"
+  fi
+
+  cmd_session "$SESSION_NAME"
+}
+
+wt_cmd_open() {
+  local FEATURE_NAME SESSION_NAME
+  if ! _parse_feature_and_session "$@"; then
+    die "Usage: xws worktree open <feature> [--name <session-name>]"
+  fi
+  
+  # Handling main/master gracefully
+  if [[ "$FEATURE_NAME" == "main" || "$FEATURE_NAME" == "master" ]]; then
+    if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+      die "Not a git repository."
+    fi
+    local main_repo_path
+    main_repo_path=$(git worktree list --porcelain | head -n1 | cut -d ' ' -f 2)
+    cd "$main_repo_path" || die "Cannot access root repo."
+    cmd_session "$SESSION_NAME"
+    return 0
+  fi
+  
+  _resolve_paths "$FEATURE_NAME"
+  
+  if [[ ! -d "$WT_PATH" ]]; then
+    die "Worktree does not exist: $WT_PATH\nUse: xws worktree create $FEATURE_NAME"
+  fi
+
+  cd "$WT_PATH" || die "Failed to enter worktree directory: $WT_PATH"
+  cmd_session "$SESSION_NAME"
+}
+
+wt_cmd_remove() {
+  local feature_name=""
+  local force=false
+  
+  while [[ "$#" -gt 0 ]]; do
+    case "$1" in
+      -f|--force) force=true ;;
+      *) feature_name="$1" ;;
+    esac
+    shift
+  done
+
+  if [[ -z "$feature_name" ]]; then
+    die "Usage: xws worktree remove <feature> [-f|--force]"
+  fi
+  
+  if [[ "$feature_name" == "main" || "$feature_name" == "master" ]]; then
+    die "Cannot remove main/master worktree."
+  fi
+  
+  _resolve_paths "$feature_name"
+  
+  if [[ ! -d "$WT_PATH" ]]; then
+    err "Worktree does not exist: $WT_PATH"
+    return 1
+  fi
+
+  if _check_uncommitted "$WT_PATH"; then
+    if [[ "$force" == false ]]; then
+      die "Uncommitted changes in $WT_PATH\nUse -f or --force to remove anyway."
+    fi
+  fi
+
+  if tmux has-session -t "$BRANCH_NAME" 2>/dev/null; then
+    info "Killing tmux session: $BRANCH_NAME"
+    tmux kill-session -t "$BRANCH_NAME"
+  fi
+
+  info "Removing worktree: $WT_PATH"
+  git worktree remove "$WT_PATH"
+  
+  rmdir "$WT_ROOT" 2>/dev/null || true
+  
+  info "Removed: $BRANCH_NAME"
+}
+
+wt_cmd_list() {
+  if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    die "Not a git repository."
+  fi
+
+  echo "Worktrees:"
+  echo ""
+  
+  local main_repo_path
+  main_repo_path=$(git worktree list --porcelain | head -n1 | cut -d ' ' -f 2)
+  
+  # Parse porcelain format safely
+  git worktree list --porcelain 2>/dev/null | while IFS= read -r line; do
+    if [[ "$line" == worktree* ]]; then
+      local wt_path="${line#worktree }"
+      local branch=""
+      
+      # Consume head and branch lines
+      read -r _head_line || true
+      read -r branch_line || true
+      
+      if [[ "$branch_line" == branch* ]]; then
+        branch="${branch_line#branch refs/heads/}"
+      fi
+      
+      local is_main=""
+      if [[ "$wt_path" == "$main_repo_path" ]]; then
+        is_main=" (main)"
+      fi
+      
+      printf "  %-25s%s\n" "$branch" "$is_main"
+    fi
+  done
+}
+
+cmd_worktree() {
+  local subcmd="${1:-}"
+  
+  if [[ -z "$subcmd" ]]; then
+    show_worktree_help
+    return 0
+  fi
+  
+  shift || true
+
+  case "$subcmd" in
+    create) wt_cmd_create "$@" ;;
+    open)   wt_cmd_open "$@" ;;
+    remove) wt_cmd_remove "$@" ;;
+    list)   wt_cmd_list "$@" ;;
+    help|-h|--help) show_worktree_help ;;
+    *)      die "Unknown worktree command '$subcmd'.\nRun 'xws worktree help' for usage." ;;
+  esac
+}
+
+main() {
+  local cmd="${1:-}"
+  
+  if [[ -z "$cmd" ]]; then
+    show_help
+    return 0
+  fi
+  
+  shift || true
+
+  case "$cmd" in
+    session)  cmd_session "$@" ;;
+    worktree) cmd_worktree "$@" ;;
+    help|-h|--help) show_help ;;
+    *)        die "Unknown command '$cmd'.\nRun 'xws help' for usage." ;;
+  esac
+}
+
+main "$@"

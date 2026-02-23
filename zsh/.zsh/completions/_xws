@@ -1,0 +1,61 @@
+#compdef xws
+
+_xws() {
+  local state
+  
+  _arguments -C \
+    '1: :->cmds' \
+    '2: :->subcmds' \
+    '3: :->args' \
+    '*:: :->rest'
+
+  case $state in
+    cmds)
+      local commands=(
+        "session:Create or attach tmux session"
+        "worktree:Manage git worktrees"
+        "help:Show help"
+      )
+      _describe -t commands 'xws commands' commands
+      ;;
+    subcmds)
+      case $words[2] in
+        session)
+          # Podpowiada istniejące sesje tmux
+          local sessions=("${(@f)$(tmux ls -F '#{session_name}' 2>/dev/null)}")
+          _describe -t sessions 'tmux sessions' sessions
+          ;;
+        worktree)
+          local wt_cmds=(
+            "create:Create new worktree"
+            "open:Open existing worktree"
+            "remove:Remove worktree"
+            "list:List all worktrees"
+          )
+          _describe -t wt_cmds 'worktree commands' wt_cmds
+          ;;
+      esac
+      ;;
+    args)
+      if [[ $words[2] == "worktree" ]]; then
+        case $words[3] in
+          open|remove)
+            # Dynamicznie wyciąga nazwy branchy podpiętych do worktree
+            local worktrees=("${(@f)$(git worktree list --porcelain 2>/dev/null | awk '/^branch/ {print substr($0, 19)}')}")
+            _describe -t worktrees 'worktrees' worktrees
+            ;;
+          list)
+            # Blokuje podpowiadanie plików
+            _message "No arguments required"
+            ;;
+          create)
+            # Blokuje podpowiadanie plików (czekamy na wpisanie nazwy)
+            _message "Enter new feature name"
+            ;;
+        esac
+      fi
+      ;;
+  esac
+}
+
+_xws "$@"
