@@ -1,0 +1,52 @@
+# skhd config - Left Alt (lalt) only bindings for Aerospace
+# Right Alt (ralt) remains free for typing Polish characters
+# This file should be linked to ~/.config/skhd/skhdrc
+
+# Basic window operations
+lalt - x : aerospace fullscreen
+lalt - z : aerospace layout floating tiling
+
+# Layout cycling
+lalt - 0x2F : aerospace layout tiles horizontal vertical
+lalt - 0x2C : aerospace layout accordion horizontal vertical
+
+# Focus movement
+lalt - h : aerospace focus left
+lalt - j : aerospace focus down
+lalt - k : aerospace focus up
+lalt - l : aerospace focus right
+
+# Move windows
+lalt + shift - h : aerospace move left
+lalt + shift - j : aerospace move down
+lalt + shift - k : aerospace move up
+lalt + shift - l : aerospace move right
+
+# Resize - commented out due to parsing issues with minus in command
+# lalt + shift - 0x1B : aerospace resize smart -50
+# lalt + shift - 0x18 : aerospace resize smart +50
+
+# Workspace switching
+lalt - a : aerospace workspace A
+lalt - s : aerospace workspace S
+lalt - d : aerospace workspace D
+lalt - f : aerospace workspace F
+lalt - 1 : aerospace workspace 1
+lalt - 2 : aerospace workspace 2
+lalt - 3 : aerospace workspace 3
+
+# Move node to workspace
+lalt + shift - a : aerospace move-node-to-workspace A
+lalt + shift - s : aerospace move-node-to-workspace S
+lalt + shift - d : aerospace move-node-to-workspace D
+lalt + shift - f : aerospace move-node-to-workspace F
+lalt + shift - 1 : aerospace move-node-to-workspace 1
+lalt + shift - 2 : aerospace move-node-to-workspace 2
+lalt + shift - 3 : aerospace move-node-to-workspace 3
+
+# Workspace navigation
+lalt - tab : aerospace workspace-back-and-forth
+lalt + shift - tab : aerospace move-workspace-to-monitor --wrap-around next
+
+# Service mode activation
+lalt + shift - 0x29 : aerospace mode service

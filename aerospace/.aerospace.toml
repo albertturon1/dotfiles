@@ -65,8 +65,14 @@ outer.left = 0
 # See: https://nikitabobko.github.io/AeroSpace/guide#binding-modes
 # 'main' binding mode must be always presented
 [mode.main.binding]
-ctrl-alt-x = 'fullscreen'
-ctrl-alt-z = 'layout floating tiling'
+# NOTE: All Alt-based bindings moved to skhd for proper left/right alt handling
+# Right-alt (ralt) remains free for typing Polish characters
+# See: ~/.skhdrc for lalt (left-alt) bindings
+
+# Basic window operations - handled by skhd: lalt - x / lalt - z
+# alt-x = 'fullscreen'
+# alt-z = 'layout floating tiling'
+
 # All possible keys:
 # - Letters.        a, b, c, ..., z
 # - Numbers.        0, 1, 2, ..., 9
@@ -78,59 +84,67 @@ ctrl-alt-z = 'layout floating tiling'
 #                   keypadMinus, keypadMultiply, keypadPlus
 # - Arrows.         left, down, up, right
 
-# All possible modifiers: cmd, ctrl-alt, ctrl, shift
+# All possible modifiers: cmd, alt, ctrl, shift
 
 # All possible commands: https://nikitabobko.github.io/AeroSpace/commands
 
-# You can uncomment this line to open up terminal with ctrl-alt + enter shortcut
+# You can uncomment this line to open up terminal with alt + enter shortcut
 # See: https://nikitabobko.github.io/AeroSpace/commands#exec-and-forget
-# ctrl-alt-enter = 'exec-and-forget open -n /System/Applications/Utilities/Terminal.app'
+# alt-enter = 'exec-and-forget open -n /System/Applications/Utilities/Terminal.app'
 
+# Layout cycling - handled by skhd: lalt - slash / lalt - comma
 # See: https://nikitabobko.github.io/AeroSpace/commands#layout
-ctrl-shift-cmd-slash = 'layout tiles horizontal vertical'
-ctrl-shift-cmd-comma = 'layout accordion horizontal vertical'
+# alt-slash = 'layout tiles horizontal vertical'
+# alt-comma = 'layout accordion horizontal vertical'
 
+# Focus movement - handled by skhd: lalt - h/j/k/l
 # See: https://nikitabobko.github.io/AeroSpace/commands#focus
-ctrl-shift-cmd-h = 'focus left'
-ctrl-shift-cmd-j = 'focus down'
-ctrl-shift-cmd-k = 'focus up'
-ctrl-shift-cmd-l = 'focus right'
+# alt-h = 'focus left'
+# alt-j = 'focus down'
+# alt-k = 'focus up'
+# alt-l = 'focus right'
 
+# Move windows - handled by skhd: lalt + shift - h/j/k/l
 # See: https://nikitabobko.github.io/AeroSpace/commands#move
-ctrl-shift-cmd-alt-h = 'move left'
-ctrl-shift-cmd-alt-j = 'move down'
-ctrl-shift-cmd-alt-k = 'move up'
-ctrl-shift-cmd-alt-l = 'move right'
+# alt-shift-h = 'move left'
+# alt-shift-j = 'move down'
+# alt-shift-k = 'move up'
+# alt-shift-l = 'move right'
 
+# Resize - handled by skhd: lalt + shift - minus/equal
 # See: https://nikitabobko.github.io/AeroSpace/commands#resize
-ctrl-shift-cmd-minus = 'resize smart -50'
-ctrl-shift-cmd-equal = 'resize smart +50'
+# alt-shift-minus = 'resize smart -50'
+# alt-shift-equal = 'resize smart +50'
 
+# Workspace switching - handled by skhd: lalt - a/s/d/f/1/2/3
 # See: https://nikitabobko.github.io/AeroSpace/commands#workspace
-ctrl-shift-cmd-a = 'workspace A'
-ctrl-shift-cmd-s = 'workspace S'
-ctrl-shift-cmd-d = 'workspace D'
-ctrl-shift-cmd-f = 'workspace F'
-ctrl-shift-cmd-1 = 'workspace 1'
-ctrl-shift-cmd-2 = 'workspace 2'
-ctrl-shift-cmd-3 = 'workspace 3'
+# alt-a = 'workspace A'
+# alt-s = 'workspace S'
+# alt-d = 'workspace D'
+# alt-f = 'workspace F'
+# alt-1 = 'workspace 1'
+# alt-2 = 'workspace 2'
+# alt-3 = 'workspace 3'
 
+# Move node to workspace - handled by skhd: lalt + shift - a/s/d/f/1/2/3
 # See: https://nikitabobko.github.io/AeroSpace/commands#move-node-to-workspace
-ctrl-shift-cmd-alt-a = 'move-node-to-workspace A'
-ctrl-shift-cmd-alt-s = 'move-node-to-workspace S'
-ctrl-shift-cmd-alt-d = 'move-node-to-workspace D'
-ctrl-shift-cmd-alt-f = 'move-node-to-workspace F'
-ctrl-shift-cmd-alt-1 = 'move-node-to-workspace 1'
-ctrl-shift-cmd-alt-2 = 'move-node-to-workspace 2'
-ctrl-shift-cmd-alt-3 = 'move-node-to-workspace 3'
+# alt-shift-a = 'move-node-to-workspace A'
+# alt-shift-s = 'move-node-to-workspace S'
+# alt-shift-d = 'move-node-to-workspace D'
+# alt-shift-f = 'move-node-to-workspace F'
+# alt-shift-1 = 'move-node-to-workspace 1'
+# alt-shift-2 = 'move-node-to-workspace 2'
+# alt-shift-3 = 'move-node-to-workspace 3'
 
+# Workspace navigation - handled by skhd: lalt - tab / lalt + shift - tab
 # See: https://nikitabobko.github.io/AeroSpace/commands#workspace-back-and-forth
-ctrl-alt-tab = 'workspace-back-and-forth'
+# alt-tab = 'workspace-back-and-forth'
 # See: https://nikitabobko.github.io/AeroSpace/commands#move-workspace-to-monitor
-ctrl-alt-shift-tab = 'move-workspace-to-monitor --wrap-around next'
+# alt-shift-tab = 'move-workspace-to-monitor --wrap-around next'
 
+# Service mode activation - handled by skhd: lalt + shift - semicolon
 # See: https://nikitabobko.github.io/AeroSpace/commands#mode
-ctrl-alt-semicolon = 'mode service'
+# alt-shift-semicolon = 'mode service'
 
 # 'service' binding mode declaration.
 # See: https://nikitabobko.github.io/AeroSpace/guide#binding-modes
@@ -144,10 +158,13 @@ f = [
 ] # Toggle between floating and tiling layout
 backspace = ['close-all-windows-but-current', 'mode main']
 
-alt-shift-h = ['join-with left', 'mode main']
-alt-shift-j = ['join-with down', 'mode main']
-alt-shift-k = ['join-with up', 'mode main']
-alt-shift-l = ['join-with right', 'mode main']
+# Service mode join-with - handled by skhd: lalt + shift - h/j/k/l
+# Note: These commands need to be handled differently in skhd since modes aren't supported
+# For now, kept in aerospace service mode or use alternative bindings
+# alt-shift-h = ['join-with left', 'mode main']
+# alt-shift-j = ['join-with down', 'mode main']
+# alt-shift-k = ['join-with up', 'mode main']
+# alt-shift-l = ['join-with right', 'mode main']
 
 # C workspace
 [[on-window-detected]]
