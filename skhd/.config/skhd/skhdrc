@@ -22,9 +22,9 @@ lalt + shift - j : aerospace move down
 lalt + shift - k : aerospace move up
 lalt + shift - l : aerospace move right
 
-# Resize - commented out due to parsing issues with minus in command
-# lalt + shift - 0x1B : aerospace resize smart -50
-# lalt + shift - 0x18 : aerospace resize smart +50
+# Resize
+lalt + shift - 0x1b : aerospace resize smart -50
+lalt + shift - 0x18 : aerospace resize smart +50
 
 # Workspace switching
 lalt - a : aerospace workspace A

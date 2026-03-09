@@ -1,61 +1,81 @@
 #compdef xws
 
-_xws() {
-  local state
-  
-  _arguments -C \
-    '1: :->cmds' \
-    '2: :->subcmds' \
-    '3: :->args' \
-    '*:: :->rest'
+_xws_tmux_sessions() {
+	local -a sessions
+	while IFS= read -r session; do
+		[[ -n "$session" ]] && sessions+=("$session")
+	done < <(tmux ls -F '#{session_name}' 2>/dev/null)
+	(( ${#sessions[@]} )) && _describe -t sessions 'sessions' sessions
+}
 
-  case $state in
-    cmds)
-      local commands=(
-        "session:Create or attach tmux session"
-        "worktree:Manage git worktrees"
-        "help:Show help"
-      )
-      _describe -t commands 'xws commands' commands
-      ;;
-    subcmds)
-      case $words[2] in
-        session)
-          # Podpowiada istniejące sesje tmux
-          local sessions=("${(@f)$(tmux ls -F '#{session_name}' 2>/dev/null)}")
-          _describe -t sessions 'tmux sessions' sessions
-          ;;
-        worktree)
-          local wt_cmds=(
-            "create:Create new worktree"
-            "open:Open existing worktree"
-            "remove:Remove worktree"
-            "list:List all worktrees"
-          )
-          _describe -t wt_cmds 'worktree commands' wt_cmds
-          ;;
-      esac
-      ;;
-    args)
-      if [[ $words[2] == "worktree" ]]; then
-        case $words[3] in
-          open|remove)
-            # Dynamicznie wyciąga nazwy branchy podpiętych do worktree
-            local worktrees=("${(@f)$(git worktree list --porcelain 2>/dev/null | awk '/^branch/ {print substr($0, 19)}')}")
-            _describe -t worktrees 'worktrees' worktrees
-            ;;
-          list)
-            # Blokuje podpowiadanie plików
-            _message "No arguments required"
-            ;;
-          create)
-            # Blokuje podpowiadanie plików (czekamy na wpisanie nazwy)
-            _message "Enter new feature name"
-            ;;
-        esac
-      fi
-      ;;
-  esac
+_xws_worktree_folders() {
+	local -a folders
+	while IFS= read -r line; do
+		[[ "$line" == worktree* ]] && folders+=("$(basename "${line#worktree }")")
+	done < <(git worktree list --porcelain 2>/dev/null)
+	(( ${#folders[@]} )) && _describe -t folders 'worktrees' folders
+}
+
+_xws() {
+	local state
+
+	_arguments -C \
+		'1: :->cmds' \
+		'2: :->subcmds' \
+		'*: :->args'
+
+	case $state in
+		cmds)
+			local cmds=(
+				"session:Manage tmux sessions"
+				"worktree:Manage git worktrees"
+				"help:Show help"
+			)
+			_describe -t commands 'commands' cmds
+			;;
+
+		subcmds)
+			case $words[2] in
+				session)
+					local session_cmds=(
+						"create:Create new tmux session"
+						"open:Open existing tmux session"
+						"kill:Kill tmux session"
+						"list:List tmux sessions"
+					)
+					_describe -t session_cmds 'session commands' session_cmds
+					;;
+				worktree)
+					local wt_cmds=(
+						"create:Create new worktree"
+						"open:Open existing worktree"
+						"remove:Remove worktree"
+						"list:List all worktrees"
+					)
+					_describe -t wt_cmds 'worktree commands' wt_cmds
+					;;
+			esac
+			;;
+
+		args)
+			case $words[2] in
+				session)
+					case $words[3] in
+						open|kill)
+							_xws_tmux_sessions
+							;;
+					esac
+					;;
+				worktree)
+					case $words[3] in
+						open|remove)
+							_xws_worktree_folders
+							;;
+					esac
+					;;
+			esac
+			;;
+	esac
 }
 
 _xws "$@"

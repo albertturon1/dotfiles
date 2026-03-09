@@ -89,6 +89,9 @@ P.S. You can delete this when you're done too. It's your config now! :)
 --  NOTE: Must happen before plugins are loaded (otherwise wrong leader will be used)
 vim.g.mapleader = ' '
 vim.g.maplocalleader = ' '
+vim.o.termguicolors = true
+-- hide "~" after eof. related to `if you encounter any styling issues, consider removing the following block`
+vim.opt.fillchars:append { eob = ' ' }
 
 -- Set to true if you have a Nerd Font installed and selected in the terminal
 vim.g.have_nerd_font = false
@@ -529,6 +532,14 @@ require('lazy').setup({
         --  All the info you're looking for is in `:help telescope.setup()`
         --
         defaults = {
+          layout_strategy = 'vertical',
+          layout_config = {
+            width = 0.999,
+            height = 0.999,
+            preview_height = 0.55,
+            preview_cutoff = 1,
+            prompt_position = 'top',
+          },
           mappings = {
             i = {
               ['<c-enter>'] = 'to_fuzzy_refine',
@@ -577,7 +588,8 @@ require('lazy').setup({
       vim.keymap.set('n', '<leader>x', '<cmd>x<CR>', { desc = 'Save and E[x]it' })
       vim.keymap.set('n', '<leader>Q', '<cmd>qa<CR>', { desc = '[Q]uit all' })
       vim.keymap.set('n', '<leader>e', '<cmd>NvimTreeToggle<CR>', { desc = '[E]xplorer Toggle' }) -- https://github.com/nvim-tree/nvim-tree.lua
-
+      vim.keymap.set('n', '<leader>a', 'ggVG', { desc = '[A]ll: select whole buffer' })
+      vim.keymap.set('n', '<leader>Y', ':%y+<CR>', { desc = 'Yank whole buffer to clipboard' })
       -- Override default behavior and theme when searching
       vim.keymap.set('n', '<leader>/', function()
         -- You can pass additional configuration to Telescope to change the theme, layout, etc.
@@ -813,7 +825,7 @@ require('lazy').setup({
         -- clangd = {},
         -- gopls = {},
         -- pyright = {},
-        -- rust_analyzer = {},
+        rust_analyzer = {},
         -- ... etc. See `:help lspconfig-all` for a list of all the pre-configured LSPs
         --
         -- Some languages (like typescript) have entire language plugins that can be useful:
@@ -909,6 +921,7 @@ require('lazy').setup({
           }
         end
       end,
+
       formatters_by_ft = {
         lua = { 'stylua' },
         -- Conform can also run multiple formatters sequentially
@@ -916,6 +929,11 @@ require('lazy').setup({
         --
         -- You can use 'stop_after_first' to run the first available formatter from the list
         -- javascript = { "prettierd", "prettier", stop_after_first = true },
+        javascript = { 'oxfmt', 'biome', 'prettier', stop_after_first = true },
+        javascriptreact = { 'oxfmt', 'biome', 'prettier', stop_after_first = true },
+        typescript = { 'oxfmt', 'biome', 'prettier', stop_after_first = true },
+        typescriptreact = { 'oxfmt', 'biome', 'prettier', stop_after_first = true },
+        json = { 'oxfmt', 'biome', 'prettier', stop_after_first = true },
       },
     },
   },
@@ -1017,27 +1035,106 @@ require('lazy').setup({
     },
   },
 
-  { -- You can easily change to a different colorscheme.
-    -- Change the name of the colorscheme plugin below, and then
-    -- change the command in the config to whatever the name of that colorscheme is.
-    --
-    -- If you want to see what colorschemes are already installed, you can use `:Telescope colorscheme`.
-    'folke/tokyonight.nvim',
-    priority = 1000, -- Make sure to load this before all the other start plugins.
+  {
+    'fcoury/termy.nvim',
+    lazy = false,
+    priority = 1000,
     config = function()
-      ---@diagnostic disable-next-line: missing-fields
-      require('tokyonight').setup {
-        styles = {
-          comments = { italic = false }, -- Disable italics in comments
-        },
-      }
+      vim.cmd.colorscheme 'termy-dark'
 
-      -- Load the colorscheme here.
-      -- Like many other themes, this one has different styles, and you could load
-      -- any other, such as 'tokyonight-storm', 'tokyonight-moon', or 'tokyonight-day'.
-      vim.cmd.colorscheme 'tokyonight-night'
+      -- Dim Neovim when tmux pane loses focus (NO transparency, NO effect outside tmux)
+      -- If you encounter any styling issues, consider removing the following block
+      if vim.env.TMUX and vim.env.TMUX ~= '' then
+        local inactive_bg = '#212121'
+
+        -- groups you want to "follow" the pane background
+        local groups = { 'Normal', 'NormalNC', 'EndOfBuffer', 'SignColumn', 'NormalFloat', 'FloatBorder' }
+
+        local saved = nil
+
+        local function snapshot()
+          saved = {}
+          for _, name in ipairs(groups) do
+            -- link=false gives real values, not linked group name
+            saved[name] = vim.api.nvim_get_hl(0, { name = name, link = false })
+          end
+        end
+
+        local function apply_inactive()
+          if not saved then
+            snapshot()
+          end
+          for _, name in ipairs(groups) do
+            local hl = vim.tbl_deep_extend('force', {}, saved[name] or {})
+            hl.bg = inactive_bg
+            vim.api.nvim_set_hl(0, name, hl)
+          end
+        end
+
+        local function restore_active()
+          if not saved then
+            snapshot()
+          end
+          for _, name in ipairs(groups) do
+            vim.api.nvim_set_hl(0, name, saved[name] or {})
+          end
+        end
+
+        local grp = vim.api.nvim_create_augroup('TmuxPaneDimStable', { clear = true })
+
+        -- when nvim starts, assume active and snapshot current theme
+        vim.api.nvim_create_autocmd('VimEnter', {
+          group = grp,
+          callback = function()
+            snapshot()
+            restore_active()
+          end,
+        })
+
+        vim.api.nvim_create_autocmd('FocusLost', {
+          group = grp,
+          callback = apply_inactive,
+        })
+
+        vim.api.nvim_create_autocmd('FocusGained', {
+          group = grp,
+          callback = restore_active,
+        })
+
+        -- if you change colorscheme, refresh snapshot (so restore goes back to the NEW theme)
+        vim.api.nvim_create_autocmd('ColorScheme', {
+          group = grp,
+          callback = function()
+            snapshot()
+            restore_active()
+          end,
+        })
+      end
     end,
   },
+
+  -- ORIGINAL THEME
+  -- { -- You can easily change to a different colorscheme.
+  --   -- Change the name of the colorscheme plugin below, and then
+  --   -- change the command in the config to whatever the name of that colorscheme is.
+  --   --
+  --   -- If you want to see what colorschemes are already installed, you can use `:Telescope colorscheme`.
+  --   'folke/tokyonight.nvim',
+  --   priority = 1000, -- Make sure to load this before all the other start plugins.
+  --   config = function()
+  --     ---@diagnostic disable-next-line: missing-fields
+  --     require('tokyonight').setup {
+  --       styles = {
+  --         comments = { italic = false }, -- Disable italics in comments
+  --       },
+  --     }
+  --
+  --     -- Load the colorscheme here.
+  --     -- Like many other themes, this one has different styles, and you could load
+  --     -- any other, such as 'tokyonight-storm', 'tokyonight-moon', or 'tokyonight-day'.
+  --     vim.cmd.colorscheme 'tokyonight-night'
+  --   end,
+  -- },
 
   -- Highlight todo, notes, etc in comments
   { 'folke/todo-comments.nvim', event = 'VimEnter', dependencies = { 'nvim-lua/plenary.nvim' }, opts = { signs = false } },
@@ -1083,7 +1180,7 @@ require('lazy').setup({
   { -- Highlight, edit, and navigate code
     'nvim-treesitter/nvim-treesitter',
     build = ':TSUpdate',
-    main = 'nvim-treesitter.configs', -- Sets main module to use for opts
+    main = 'nvim-treesitter', -- Sets main module to use for opts
     -- [[ Configure Treesitter ]] See `:help nvim-treesitter`
     opts = {
       ensure_installed = { 'bash', 'c', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc' },

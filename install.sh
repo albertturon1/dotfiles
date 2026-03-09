@@ -11,10 +11,14 @@ if ! command -v brew &> /dev/null; then
     echo "Homebrew not found. Installing..."
     /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
     
-    # Add Homebrew to PATH for Apple Silicon Macs
+    # Add Homebrew to PATH for Apple Silicon Macs (idempotent)
     if [[ -f /opt/homebrew/bin/brew ]]; then
-        echo 'eval "$(/opt/homebrew/bin/brew shellenv)"' >> ~/.zprofile
-        eval "$(/opt/homebrew/bin/brew shellenv)"
+        HOMEBREW_LINE='eval "$(/opt/homebrew/bin/brew shellenv)"'
+        if ! grep -qF "$HOMEBREW_LINE" ~/.zprofile 2>/dev/null; then
+            echo "$HOMEBREW_LINE" >> ~/.zprofile
+            echo "Added Homebrew to ~/.zprofile"
+        fi
+        eval "$HOMEBREW_LINE"
     fi
 fi
 
@@ -48,10 +52,19 @@ for package in aerospace bin lazygit nvim opencode skhd tmux zsh; do
     fi
 done
 
-# Install tmux plugins via TPM
-if [ -f "$HOME/.config/tmux/tmux.conf" ] && [ -x "$HOME/.config/tmux/plugins/tpm/bin/install_plugins" ]; then
-    echo "Installing tmux plugins..."
-    "$HOME/.config/tmux/plugins/tpm/bin/install_plugins" 2>/dev/null || echo "  Note: Tmux plugins will be installed on first tmux start (press prefix + I)"
+# Install TPM (Tmux Plugin Manager) if not present
+if [ -f "$HOME/.config/tmux/tmux.conf" ]; then
+    TPM_PATH="$HOME/.config/tmux/plugins/tpm"
+    if [ ! -d "$TPM_PATH" ]; then
+        echo "Installing TPM (Tmux Plugin Manager)..."
+        git clone https://github.com/tmux-plugins/tpm "$TPM_PATH"
+    fi
+    
+    # Install tmux plugins
+    if [ -x "$TPM_PATH/bin/install_plugins" ]; then
+        echo "Installing tmux plugins..."
+        "$TPM_PATH/bin/install_plugins" 2>/dev/null || echo "  Note: Some plugins may need manual installation with prefix + I in tmux"
+    fi
 fi
 
 # Setup skhd service

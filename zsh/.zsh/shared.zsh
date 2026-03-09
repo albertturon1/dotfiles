@@ -19,3 +19,5 @@ fpath+=("$HOME/.zsh/completions")
 # Initialize completions
 autoload -Uz compinit
 compinit
+
+zstyle ':completion:*:*:xws:*' insert-unambiguous false
