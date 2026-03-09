@@ -94,7 +94,7 @@ vim.o.termguicolors = true
 vim.opt.fillchars:append { eob = ' ' }
 
 -- Set to true if you have a Nerd Font installed and selected in the terminal
-vim.g.have_nerd_font = false
+vim.g.have_nerd_font = true
 
 -- [[ Setting options ]]
 -- See `:help vim.o`
@@ -105,7 +105,7 @@ vim.g.have_nerd_font = false
 vim.o.number = true
 -- You can also add relative line numbers, to help with jumping.
 --  Experiment for yourself to see if you like it!
--- vim.o.relativenumber = true
+vim.o.relativenumber = true
 
 -- Enable mouse mode, can be useful for resizing splits for example!
 vim.o.mouse = 'a'
@@ -432,7 +432,17 @@ require('lazy').setup({
       'nvim-tree/nvim-web-devicons',
     },
     config = function()
-      require('nvim-tree').setup {}
+      require('nvim-tree').setup {
+        update_focused_file = {
+          enable = true,
+          update_root = true,
+        },
+        actions = {
+          open_file = {
+            quit_on_open = true,
+          },
+        },
+      }
     end,
   },
 
@@ -532,13 +542,23 @@ require('lazy').setup({
         --  All the info you're looking for is in `:help telescope.setup()`
         --
         defaults = {
-          layout_strategy = 'vertical',
+          layout_strategy = 'flex',
           layout_config = {
-            width = 0.999,
-            height = 0.999,
-            preview_height = 0.55,
-            preview_cutoff = 1,
-            prompt_position = 'top',
+            horizontal = {
+              prompt_position = 'top',
+              height = { padding = 0 },
+              width = { padding = 0 },
+              preview_width = 0.5,
+            },
+            vertical = {
+              prompt_position = 'top',
+              height = { padding = 0 },
+              width = { padding = 0 },
+              preview_height = 0.5,
+            },
+            flex = {
+              flip_coluns = 120,
+            },
           },
           mappings = {
             i = {
@@ -573,10 +593,17 @@ require('lazy').setup({
       local builtin = require 'telescope.builtin'
       vim.keymap.set('n', '<leader>sh', builtin.help_tags, { desc = '[S]earch [H]elp' })
       vim.keymap.set('n', '<leader>sk', builtin.keymaps, { desc = '[S]earch [K]eymaps' })
-      vim.keymap.set('n', '<leader>sf', builtin.find_files, { desc = '[S]earch [F]iles' })
+      vim.keymap.set('n', '<C-p>', builtin.find_files, { desc = '[S]earch [F]iles' })
       vim.keymap.set('n', '<leader>ss', builtin.builtin, { desc = '[S]earch [S]elect Telescope' })
       vim.keymap.set('n', '<leader>sw', builtin.grep_string, { desc = '[S]earch current [W]ord' })
-      vim.keymap.set('n', '<leader>sg', builtin.live_grep, { desc = '[S]earch by [G]rep' })
+      -- vim.keymap.set('n', '<leader>sg', builtin.live_grep, { desc = '[S]earch by [G]rep' })
+      vim.keymap.set('n', '<leader>sg', function()
+        require('telescope.builtin').live_grep {
+          additional_args = function()
+            return { '--fixed-strings' }
+          end,
+        }
+      end, { desc = '[S]earch by [G]rep' })
       vim.keymap.set('n', '<leader>sd', builtin.diagnostics, { desc = '[S]earch [D]iagnostics' })
       vim.keymap.set('n', '<leader>sr', builtin.resume, { desc = '[S]earch [R]esume' })
       vim.keymap.set('n', '<leader>s.', builtin.oldfiles, { desc = '[S]earch Recent Files ("." for repeat)' })
@@ -1042,6 +1069,15 @@ require('lazy').setup({
     config = function()
       vim.cmd.colorscheme 'termy-dark'
 
+      -- Hide borders for Telescope
+      vim.api.nvim_set_hl(0, 'TelescopeBorder', { bg = 'none', fg = 'none' })
+      vim.api.nvim_set_hl(0, 'TelescopeNormal', { bg = 'none' })
+      vim.api.nvim_set_hl(0, 'TelescopePromptBorder', { bg = 'none', fg = 'none' })
+      vim.api.nvim_set_hl(0, 'TelescopePromptNormal', { bg = 'none' })
+      vim.api.nvim_set_hl(0, 'TelescopePromptTitle', { bg = 'none', fg = 'none' })
+      vim.api.nvim_set_hl(0, 'TelescopePreviewTitle', { bg = 'none', fg = 'none' })
+      vim.api.nvim_set_hl(0, 'TelescopeResultsTitle', { bg = 'none', fg = 'none' })
+
       -- Dim Neovim when tmux pane loses focus (NO transparency, NO effect outside tmux)
       -- If you encounter any styling issues, consider removing the following block
       if vim.env.TMUX and vim.env.TMUX ~= '' then
@@ -1179,6 +1215,7 @@ require('lazy').setup({
   },
   { -- Highlight, edit, and navigate code
     'nvim-treesitter/nvim-treesitter',
+    branch = 'master',
     build = ':TSUpdate',
     main = 'nvim-treesitter', -- Sets main module to use for opts
     -- [[ Configure Treesitter ]] See `:help nvim-treesitter`
