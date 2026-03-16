@@ -3,3 +3,7 @@
 install.sh
 README.md
 .stow-local-ignore
+node_modules
+*.lock
+dist
+build

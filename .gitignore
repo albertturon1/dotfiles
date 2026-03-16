@@ -7,12 +7,13 @@ Thumbs.db
 *.backup
 *.bak
 
-# Node modules (globalne dla całego repo)
-**/node_modules/
+# Node modules 
+**/node_modules
+node_modules
 
 # Zsh
 .zcompdump*
 
-# Local config overrides (nie commitujemy secrets)
+# Local config overrides
 config/.config/github-copilot/
 config/.config/configstore/

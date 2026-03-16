@@ -32,23 +32,13 @@ if ! command -v stow &> /dev/null; then
     exit 1
 fi
 
-# Stow all packages - check for conflicts first
+# Stow all packages using --adopt to take over existing files
 echo "Stowing all packages..."
 
 for package in aerospace bin lazygit nvim opencode skhd tmux zsh; do
     if [ -d "$package" ]; then
         echo "Stowing $package..."
-        # Check for conflicts before stowing
-        CONFLICTS=$(stow -n --no-folding -t ~ "$package" 2>&1 | grep "existing target is neither a link nor a directory" || true)
-        if [ -n "$CONFLICTS" ]; then
-            echo ""
-            echo "ERROR: Conflicting files found for $package:"
-            echo "$CONFLICTS" | sed 's/^/  /'
-            echo ""
-            echo "Please remove or backup these files manually before running install.sh again."
-            exit 1
-        fi
-        stow -v --no-folding -t ~ "$package"
+        stow -v --adopt --no-folding -t ~ "$package"
     fi
 done
 
@@ -123,4 +113,5 @@ echo ""
 echo "Setup complete!"
 echo ""
 echo "Next steps:"
-echo "1. Restart your terminal or run: source ~/.zshrc"
+echo "1. Review any files adopted into your dotfiles repo with: git diff"
+echo "2. Restart your terminal or run: source ~/.zshrc"
