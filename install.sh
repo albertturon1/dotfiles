@@ -39,7 +39,7 @@ for package in aerospace bin lazygit nvim opencode skhd tmux zsh; do
     if [ -d "$package" ]; then
         echo "Stowing $package..."
         # Check for conflicts before stowing
-        CONFLICTS=$(stow -n -t ~ "$package" 2>&1 | grep "existing target is neither a link nor a directory" || true)
+        CONFLICTS=$(stow -n --no-folding -t ~ "$package" 2>&1 | grep "existing target is neither a link nor a directory" || true)
         if [ -n "$CONFLICTS" ]; then
             echo ""
             echo "ERROR: Conflicting files found for $package:"
@@ -48,7 +48,7 @@ for package in aerospace bin lazygit nvim opencode skhd tmux zsh; do
             echo "Please remove or backup these files manually before running install.sh again."
             exit 1
         fi
-        stow -v -t ~ "$package"
+        stow -v --no-folding -t ~ "$package"
     fi
 done
 

@@ -21,3 +21,6 @@ autoload -Uz compinit
 compinit
 
 zstyle ':completion:*:*:xws:*' insert-unambiguous false
+
+echo "Installing FFF MCP..."
+curl -fsSL https://dmtrkovalenko.dev/install-fff-mcp.sh | bash

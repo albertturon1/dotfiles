@@ -400,6 +400,7 @@ require('lazy').setup({
       spec = {
         { '<leader>s', group = '[S]earch' },
         { '<leader>t', group = '[T]oggle' },
+        { '<leader>g', group = '[G]it' },
         { '<leader>h', group = 'Git [H]unk', mode = { 'n', 'v' } },
       },
     },
@@ -443,6 +444,65 @@ require('lazy').setup({
   },
 
   {
+    'NeogitOrg/neogit',
+    cmd = 'Neogit',
+    dependencies = {
+      'nvim-lua/plenary.nvim',
+      'sindrets/diffview.nvim',
+      'nvim-telescope/telescope.nvim',
+    },
+    keys = {
+      { '<leader>gg', '<cmd>Neogit<cr>', desc = '[G]it status (Neo[g]it)' },
+      { '<leader>gc', '<cmd>Neogit commit<cr>', desc = '[G]it [C]ommit' },
+    },
+    config = function()
+      require('neogit').setup {
+        kind = 'split',
+        integrations = {
+          diffview = true,
+        },
+      }
+    end,
+  },
+
+  {
+    'sindrets/diffview.nvim',
+    dependencies = { 'nvim-lua/plenary.nvim' },
+    cmd = {
+      'DiffviewOpen',
+      'DiffviewClose',
+      'DiffviewToggleFiles',
+      'DiffviewFocusFiles',
+      'DiffviewFileHistory',
+    },
+    keys = {
+      { '<leader>gd', '<cmd>DiffviewOpen<cr>', desc = '[G]it [D]iff view' },
+      { '<leader>gq', '<cmd>DiffviewClose<cr>', desc = '[G]it diff [Q]uit' },
+      { '<leader>gt', '<cmd>DiffviewToggleFiles<cr>', desc = '[G]it [T]oggle files' },
+      { '<leader>gb', '<cmd>DiffviewFileHistory %<cr>', desc = '[G]it file history ([B]uffer)' },
+      { '<leader>gB', '<cmd>DiffviewFileHistory<cr>', desc = '[G]it repo history' },
+    },
+    config = function()
+      require('diffview').setup {
+        keymaps = {
+          view = {
+            { 'n', 'q', '<cmd>DiffviewClose<cr>', { desc = 'Close Diffview' } },
+          },
+          file_panel = {
+            { 'n', 'q', '<cmd>DiffviewClose<cr>', { desc = 'Close Diffview' } },
+          },
+          file_history_panel = {
+            { 'n', 'q', '<cmd>DiffviewClose<cr>', { desc = 'Close Diffview' } },
+          },
+          option_panel = {
+            { 'n', 'q', '<cmd>DiffviewClose<cr>', { desc = 'Close Diffview' } },
+          },
+        },
+      }
+    end,
+  },
+
+  {
     'nvim-tree/nvim-tree.lua',
     version = '*',
     lazy = false,
@@ -456,9 +516,9 @@ require('lazy').setup({
           update_root = true,
         },
         actions = {
-          open_file = {
-            quit_on_open = true,
-          },
+          -- open_file = {
+          --   quit_on_open = true,
+          -- },
         },
       }
     end,
@@ -515,6 +575,7 @@ require('lazy').setup({
     event = 'VimEnter',
     dependencies = {
       'nvim-lua/plenary.nvim',
+      'nvim-telescope/telescope-live-grep-args.nvim',
       { -- If encountering errors, see telescope-fzf-native README for installation instructions
         'nvim-telescope/telescope-fzf-native.nvim',
 
@@ -555,6 +616,9 @@ require('lazy').setup({
 
       -- [[ Configure Telescope ]]
       -- See `:help telescope` and `:help telescope.setup()`
+
+      local lga_actions = require 'telescope-live-grep-args.actions'
+
       require('telescope').setup {
         -- You can put your default mappings / updates / etc. in here
         --  All the info you're looking for is in `:help telescope.setup()`
@@ -577,7 +641,7 @@ require('lazy').setup({
               mirror = true,
             },
             flex = {
-              flip_columns = 120,
+              flip_columns = 150,
             },
           },
           mappings = {
@@ -606,6 +670,14 @@ require('lazy').setup({
           ['ui-select'] = {
             require('telescope.themes').get_dropdown(),
           },
+          live_grep_args = {
+            auto_quoting = true,
+            mappings = {
+              i = {
+                ['<C-k>'] = lga_actions.quote_prompt(),
+              },
+            },
+          },
           file_browser = {
             theme = 'dropdown',
             hijack_netrw = false,
@@ -618,6 +690,7 @@ require('lazy').setup({
       pcall(require('telescope').load_extension, 'fzf')
       pcall(require('telescope').load_extension, 'ui-select')
       pcall(require('telescope').load_extension, 'file_browser')
+      pcall(require('telescope').load_extension, 'live_grep_args')
 
       -- See `:help telescope.builtin`
       local builtin = require 'telescope.builtin'
@@ -628,10 +701,8 @@ require('lazy').setup({
       vim.keymap.set('n', '<leader>sw', builtin.grep_string, { desc = '[S]earch current [W]ord' })
       -- vim.keymap.set('n', '<leader>sg', builtin.live_grep, { desc = '[S]earch by [G]rep' })
       vim.keymap.set('n', '<leader>sg', function()
-        require('telescope.builtin').live_grep {
-          additional_args = function()
-            return { '--fixed-strings' }
-          end,
+        require('telescope').extensions.live_grep_args.live_grep_args {
+          additional_args = { '--fixed-strings' },
         }
       end, { desc = '[S]earch by [G]rep' })
       vim.keymap.set('n', '<leader>sd', builtin.diagnostics, { desc = '[S]earch [D]iagnostics' })
@@ -647,6 +718,9 @@ require('lazy').setup({
       vim.keymap.set('n', '<leader>e', '<cmd>NvimTreeToggle<CR>', { desc = '[E]xplorer Toggle' }) -- https://github.com/nvim-tree/nvim-tree.lua
       vim.keymap.set('n', '<leader>a', 'ggVG', { desc = '[A]ll: select whole buffer' })
       vim.keymap.set('n', '<leader>Y', ':%y+<CR>', { desc = 'Yank whole buffer to clipboard' })
+      vim.keymap.set('n', '<C-d>', '<C-d>zz')
+      vim.keymap.set('n', '<C-u>', '<C-u>zz')
+
       -- Override default behavior and theme when searching
       vim.keymap.set('n', '<leader>/', function()
         -- You can pass additional configuration to Telescope to change the theme, layout, etc.

@@ -24,6 +24,7 @@ cd ~/dotfiles
 - **zsh** - Shell configuration
 - **lazygit** - Git TUI
 - **opencode** - OpenCode AI assistant config
+- **fff-mcp** - MCP server for file navigation used by OpenCode
 - **bin** - Custom scripts (xws)
 
 ## Post-Installation
