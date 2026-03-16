@@ -67,6 +67,9 @@ if [ -f "$HOME/.config/tmux/tmux.conf" ]; then
     fi
 fi
 
+echo "Installing FFF MCP..."
+curl -fsSL https://dmtrkovalenko.dev/install-fff-mcp.sh | bash
+
 # Setup skhd service
 echo "Setting up skhd service..."
 if ! skhd --status &> /dev/null; then
