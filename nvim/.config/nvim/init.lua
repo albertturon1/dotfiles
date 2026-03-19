@@ -190,9 +190,233 @@ vim.diagnostic.config {
   jump = { float = true },
 }
 
+local closed_file_history = {}
+
+local function is_listed_buffer(bufnr)
+  return bufnr > 0 and vim.api.nvim_buf_is_valid(bufnr) and vim.bo[bufnr].buflisted
+end
+
+local function is_file_buffer(bufnr)
+  return is_listed_buffer(bufnr) and vim.bo[bufnr].buftype == '' and vim.api.nvim_buf_get_name(bufnr) ~= ''
+end
+
+local function get_reopenable_file_path(bufnr)
+  if not vim.api.nvim_buf_is_valid(bufnr) or vim.bo[bufnr].buftype ~= '' then
+    return nil
+  end
+
+  local path = vim.api.nvim_buf_get_name(bufnr)
+  if path == '' or vim.fn.filereadable(path) ~= 1 then
+    return nil
+  end
+
+  return vim.fn.fnamemodify(path, ':p')
+end
+
+local function find_fallback_file_buffer(bufnr)
+  local alt = vim.fn.bufnr '#'
+  if is_file_buffer(alt) and alt ~= bufnr then
+    return alt
+  end
+
+  local listed = vim.fn.getbufinfo { buflisted = 1 }
+  table.sort(listed, function(a, b)
+    return (a.lastused or 0) > (b.lastused or 0)
+  end)
+
+  for _, info in ipairs(listed) do
+    local candidate = info.bufnr
+    if candidate ~= bufnr and is_file_buffer(candidate) then
+      return candidate
+    end
+  end
+
+  return nil
+end
+
+local function is_normal_window(winid)
+  return vim.api.nvim_win_is_valid(winid) and vim.api.nvim_win_get_config(winid).relative == ''
+end
+
+local function find_fallback_window(current_win)
+  local alternate = vim.fn.win_getid(vim.fn.winnr '#')
+  if alternate ~= 0 and alternate ~= current_win and is_normal_window(alternate) then
+    return alternate
+  end
+
+  for _, winid in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
+    if winid ~= current_win and is_normal_window(winid) then
+      return winid
+    end
+  end
+
+  return nil
+end
+
+local function capture_reopen_context(bufnr)
+  local context = {}
+
+  local target_win = nil
+  local current_win = vim.api.nvim_get_current_win()
+  if vim.api.nvim_win_is_valid(current_win) and vim.api.nvim_win_get_buf(current_win) == bufnr then
+    target_win = current_win
+  else
+    for _, winid in ipairs(vim.fn.win_findbuf(bufnr)) do
+      if vim.api.nvim_win_is_valid(winid) then
+        target_win = winid
+        break
+      end
+    end
+  end
+
+  if target_win then
+    local ok_cursor, cursor = pcall(vim.api.nvim_win_get_cursor, target_win)
+    if ok_cursor and type(cursor) == 'table' then
+      context.cursor = { cursor[1], cursor[2] }
+    end
+
+    local ok_view, view = pcall(vim.api.nvim_win_call, target_win, function()
+      return vim.fn.winsaveview()
+    end)
+    if ok_view and type(view) == 'table' then
+      context.view = view
+    end
+  end
+
+  if not context.cursor then
+    local mark = vim.api.nvim_buf_get_mark(bufnr, '"')
+    if type(mark) == 'table' and mark[1] > 0 then
+      context.cursor = { mark[1], mark[2] }
+    end
+  end
+
+  if not context.cursor and not context.view then
+    return nil
+  end
+
+  return context
+end
+
+local function remember_closed_file(path, context)
+  if not path or path == '' then
+    return
+  end
+
+  context = context or {}
+
+  for i, item in ipairs(closed_file_history) do
+    local item_path = type(item) == 'table' and item.path or item
+    if item_path == path then
+      table.remove(closed_file_history, i)
+      break
+    end
+  end
+
+  table.insert(closed_file_history, 1, {
+    path = path,
+    cursor = context.cursor,
+    view = context.view,
+  })
+
+  if #closed_file_history > 20 then
+    table.remove(closed_file_history)
+  end
+end
+
+local function close_buffer_keep_prev(bufnr)
+  bufnr = bufnr or vim.api.nvim_get_current_buf()
+  if not is_listed_buffer(bufnr) then
+    return
+  end
+
+  local current = vim.api.nvim_get_current_buf()
+  local current_win = vim.api.nvim_get_current_win()
+  local file_path = get_reopenable_file_path(bufnr)
+  local reopen_context = file_path and capture_reopen_context(bufnr) or nil
+  local fallback_buf = nil
+  local fallback_win = nil
+
+  if bufnr == current then
+    fallback_buf = find_fallback_file_buffer(bufnr)
+    if fallback_buf then
+      vim.api.nvim_set_current_buf(fallback_buf)
+    else
+      fallback_win = find_fallback_window(current_win)
+      if fallback_win then
+        vim.api.nvim_set_current_win(fallback_win)
+      end
+    end
+  end
+
+  local ok_delete, delete_err = pcall(function()
+    vim.cmd(('bdelete %d'):format(bufnr))
+  end)
+  local deleted = ok_delete and not is_listed_buffer(bufnr)
+
+  if not deleted and bufnr == current and vim.api.nvim_win_is_valid(current_win) and vim.api.nvim_buf_is_valid(bufnr) then
+    pcall(vim.api.nvim_set_current_win, current_win)
+    pcall(vim.api.nvim_win_set_buf, current_win, bufnr)
+  end
+
+  if not ok_delete then
+    local err = tostring(delete_err)
+    local is_expected_cancel = err:match 'E89' ~= nil or err:match 'No write since last change' ~= nil
+    if not is_expected_cancel then
+      vim.notify(('Failed to close buffer %d: %s'):format(bufnr, err), vim.log.levels.WARN)
+    end
+  end
+
+  if bufnr == current and deleted and not fallback_buf then
+    if fallback_win and vim.api.nvim_win_is_valid(current_win) then
+      pcall(vim.api.nvim_win_close, current_win, true)
+    else
+      local active = vim.api.nvim_get_current_buf()
+      if vim.api.nvim_buf_is_valid(active) and vim.bo[active].buflisted and vim.bo[active].buftype == '' and vim.api.nvim_buf_get_name(active) == '' then
+        vim.bo[active].buflisted = false
+      end
+    end
+  end
+
+  if deleted and file_path then
+    remember_closed_file(file_path, reopen_context)
+  end
+end
+
+local function reopen_last_closed_buffer()
+  while #closed_file_history > 0 do
+    local item = table.remove(closed_file_history, 1)
+    local path = type(item) == 'table' and item.path or item
+
+    if type(path) == 'string' and path ~= '' and vim.fn.filereadable(path) == 1 then
+      vim.cmd(('edit %s'):format(vim.fn.fnameescape(path)))
+
+      local restored_view = false
+      if type(item) == 'table' and item.view and type(item.view) == 'table' then
+        restored_view = pcall(vim.fn.winrestview, item.view)
+      end
+
+      if not restored_view and type(item) == 'table' and item.cursor and type(item.cursor) == 'table' then
+        local line_count = vim.api.nvim_buf_line_count(0)
+        local row = math.max(1, math.min(item.cursor[1], line_count))
+        local line = vim.api.nvim_buf_get_lines(0, row - 1, row, true)[1] or ''
+        local col = math.max(0, math.min(item.cursor[2] or 0, #line))
+        pcall(vim.api.nvim_win_set_cursor, 0, { row, col })
+      end
+
+      return
+    end
+  end
+
+  vim.notify('No recently closed file buffer', vim.log.levels.INFO)
+end
+
 vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagnostic [Q]uickfix list' })
 vim.keymap.set('n', '<leader>n', '<cmd>bnext<CR>', { desc = 'Buffer next' })
 vim.keymap.set('n', '<leader>p', '<cmd>bprevious<CR>', { desc = 'Buffer previous' })
+vim.keymap.set('n', '<leader>c', function()
+  close_buffer_keep_prev()
+end, { desc = 'Buffer close' })
+vim.keymap.set('n', '<leader>C', reopen_last_closed_buffer, { desc = 'Buffer reopen last closed file' })
 
 -- Exit terminal mode in the builtin terminal with a shortcut that is a bit easier
 -- for people to discover. Otherwise, you normally need to press <C-\><C-n>, which
@@ -400,6 +624,8 @@ require('lazy').setup({
           style_preset = { bufferline.style_preset.no_italic },
           diagnostics = 'nvim_lsp',
           diagnostics_update_on_event = true,
+          close_command = close_buffer_keep_prev,
+          right_mouse_command = close_buffer_keep_prev,
           indicator = {
             style = 'icon',
             icon = '▎',
@@ -589,7 +815,9 @@ require('lazy').setup({
       require('nvim-tree').setup {
         update_focused_file = {
           enable = true,
-          update_root = true,
+          update_root = {
+            enable = true,
+          },
         },
         actions = {
           -- open_file = {
@@ -1063,7 +1291,12 @@ require('lazy').setup({
               end
             end
 
-            client.config.settings.Lua = vim.tbl_deep_extend('force', client.config.settings.Lua, {
+            local lua_settings = client.config.settings.Lua
+            if type(lua_settings) ~= 'table' then
+              lua_settings = {}
+            end
+
+            client.config.settings.Lua = vim.tbl_deep_extend('force', lua_settings, {
               runtime = {
                 version = 'LuaJIT',
                 path = { 'lua/?.lua', 'lua/?/init.lua' },
@@ -1281,23 +1514,34 @@ require('lazy').setup({
           end
         end
 
-        local function apply_inactive()
+        local function ensure_saved()
           if not saved then
             snapshot()
           end
+          return saved
+        end
+
+        local function apply_inactive()
+          local palette = ensure_saved()
+          if not palette then
+            return
+          end
+
           for _, name in ipairs(groups) do
-            local hl = vim.tbl_deep_extend('force', {}, saved[name] or {})
+            local hl = vim.tbl_deep_extend('force', {}, palette[name] or {})
             hl.bg = inactive_bg
             vim.api.nvim_set_hl(0, name, hl)
           end
         end
 
         local function restore_active()
-          if not saved then
-            snapshot()
+          local palette = ensure_saved()
+          if not palette then
+            return
           end
+
           for _, name in ipairs(groups) do
-            vim.api.nvim_set_hl(0, name, saved[name] or {})
+            vim.api.nvim_set_hl(0, name, palette[name] or {})
           end
         end
 
