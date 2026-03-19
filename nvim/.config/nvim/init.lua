@@ -607,6 +607,7 @@ require('lazy').setup({
         { '<leader>t', group = '[T]oggle' },
         { '<leader>h', group = 'Git [H]unk', mode = { 'n', 'v' } }, -- Enable gitsigns recommended keymaps first
         { 'gr', group = 'LSP Actions', mode = { 'n' } },
+        { '<leader>o', group = '[O]pencode', mode = { 'n', 'x' } },
       },
     },
   },
@@ -676,6 +677,81 @@ require('lazy').setup({
       { '<c-l>', '<cmd><C-U>TmuxNavigateRight<cr>' },
       { '<c-\\>', '<cmd><C-U>TmuxNavigatePrevious<cr>' },
     },
+  },
+
+  {
+    'tadaa/vimade',
+    opts = {
+      recipe = { 'default', { animate = false } },
+      fadelevel = 0.75,
+    },
+  },
+
+  {
+    'nickjvandyke/opencode.nvim',
+    version = '*', -- Latest stable release
+    dependencies = {
+      {
+        -- `snacks.nvim` integration for `ask()`/`select()` UI
+        ---@module "snacks" <- Loads `snacks.nvim` types for configuration intellisense
+        'folke/snacks.nvim',
+        opts = {
+          input = {}, -- Enhances `ask()`
+          picker = { -- Enhances `select()`
+            actions = {
+              opencode_send = function(...)
+                return require('opencode').snacks_picker_send(...)
+              end,
+            },
+            win = {
+              input = {
+                keys = {
+                  ['<a-a>'] = { 'opencode_send', mode = { 'n', 'i' } },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    config = function()
+      ---@type opencode.Opts
+      vim.g.opencode_opts = {
+        -- Your configuration, if any; goto definition on the type or field for details
+      }
+
+      vim.o.autoread = true -- Required for `opts.events.reload`
+
+      vim.keymap.set({ 'n', 'x' }, '<leader>oa', function()
+        require('opencode').ask('@this: ', { submit = true })
+      end, { desc = '[O]pencode [A]sk' })
+
+      vim.keymap.set({ 'n', 'x' }, '<leader>ox', function()
+        require('opencode').select()
+      end, { desc = '[O]pencode Select' })
+
+      vim.keymap.set('n', '<leader>os', function()
+        require('opencode').command 'prompt.submit'
+      end, { desc = '[O]pencode [S]ubmit' })
+
+      vim.keymap.set('n', '<leader>oc', function()
+        require('opencode').command 'prompt.clear'
+      end, { desc = '[O]pencode [C]lear' })
+
+      vim.keymap.set({ 'n', 'x' }, 'go', function()
+        return require('opencode').operator '@this '
+      end, { desc = 'Add range to opencode', expr = true })
+      vim.keymap.set('n', 'goo', function()
+        return require('opencode').operator '@this ' .. '_'
+      end, { desc = 'Add line to opencode', expr = true })
+
+      vim.keymap.set('n', '<S-C-u>', function()
+        require('opencode').command 'session.half.page.up'
+      end, { desc = 'Scroll opencode up' })
+      vim.keymap.set('n', '<S-C-d>', function()
+        require('opencode').command 'session.half.page.down'
+      end, { desc = 'Scroll opencode down' })
+    end,
   },
 
   {
@@ -849,6 +925,9 @@ require('lazy').setup({
   {
     'kdheepak/lazygit.nvim',
     lazy = true,
+    init = function()
+      vim.g.lazygit_floating_window_scaling_factor = 1
+    end,
     cmd = {
       'LazyGit',
       'LazyGitConfig',
@@ -1215,6 +1294,7 @@ require('lazy').setup({
 
             map('<leader>th', function()
               vim.lsp.inlay_hint.enable(not vim.lsp.inlay_hint.is_enabled { bufnr = event.buf })
+              vim.notify(vim.lsp.inlay_hint.is_enabled() and 'Inlay Hints Enabled' or 'Inlay Hints Disabled')
             end, '[T]oggle Inlay [H]ints')
           end
         end,
@@ -1270,10 +1350,6 @@ require('lazy').setup({
             },
           },
         },
-        oxlint = {},
-        oxfmt = {},
-        biome = {},
-        eslint = {},
         html = { filetypes = { 'html', 'twig', 'hbs' } },
         cssls = {},
         tailwindcss = {},
