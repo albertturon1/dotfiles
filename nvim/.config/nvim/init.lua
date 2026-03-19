@@ -191,6 +191,8 @@ vim.diagnostic.config {
 }
 
 vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagnostic [Q]uickfix list' })
+vim.keymap.set('n', '<leader>n', '<cmd>bnext<CR>', { desc = 'Buffer next' })
+vim.keymap.set('n', '<leader>p', '<cmd>bprevious<CR>', { desc = 'Buffer previous' })
 
 -- Exit terminal mode in the builtin terminal with a shortcut that is a bit easier
 -- for people to discover. Otherwise, you normally need to press <C-\><C-n>, which
@@ -258,7 +260,11 @@ timer:start(
 
 vim.api.nvim_create_autocmd({ 'CursorHold', 'FocusGained', 'BufEnter' }, {
   pattern = '*',
-  command = 'checktime',
+  callback = function()
+    if vim.api.nvim_get_option_value('buftype', { buf = 0 }) == '' then
+      vim.cmd 'checktime'
+    end
+  end,
 })
 
 -- Handle notification when a file is changed externally (e.g., by AI)
@@ -382,6 +388,52 @@ require('lazy').setup({
   },
 
   {
+    'akinsho/bufferline.nvim',
+    version = '*',
+    lazy = false,
+    dependencies = { 'nvim-tree/nvim-web-devicons' },
+    config = function()
+      local bufferline = require 'bufferline'
+
+      bufferline.setup {
+        options = {
+          style_preset = { bufferline.style_preset.no_italic },
+          diagnostics = 'nvim_lsp',
+          diagnostics_update_on_event = true,
+          indicator = {
+            style = 'icon',
+            icon = '▎',
+          },
+          diagnostics_indicator = function(_, _, diagnostics_dict)
+            local errors = diagnostics_dict.error or 0
+            local warnings = diagnostics_dict.warning or 0
+            local parts = {}
+            if errors > 0 then
+              parts[#parts + 1] = ' ' .. errors
+            end
+            if warnings > 0 then
+              parts[#parts + 1] = ' ' .. warnings
+            end
+            if #parts == 0 then
+              return ''
+            end
+            return ' ' .. table.concat(parts, ' ')
+          end,
+          offsets = {
+            {
+              filetype = 'NvimTree',
+              text = 'Explorer',
+              text_align = 'left',
+            },
+          },
+          separator_style = 'slant',
+          always_show_bufferline = true,
+        },
+      }
+    end,
+  },
+
+  {
     'christoomey/vim-tmux-navigator',
     cmd = {
       'TmuxNavigateLeft',
@@ -397,6 +449,55 @@ require('lazy').setup({
       { '<c-k>', '<cmd><C-U>TmuxNavigateUp<cr>' },
       { '<c-l>', '<cmd><C-U>TmuxNavigateRight<cr>' },
       { '<c-\\>', '<cmd><C-U>TmuxNavigatePrevious<cr>' },
+    },
+  },
+
+  {
+    'folke/flash.nvim',
+    event = 'VeryLazy',
+    ---@type Flash.Config
+    opts = {},
+    keys = {
+      {
+        's',
+        mode = { 'n', 'x', 'o' },
+        function()
+          require('flash').jump()
+        end,
+        desc = 'Flash',
+      },
+      {
+        'S',
+        mode = { 'n', 'x', 'o' },
+        function()
+          require('flash').treesitter()
+        end,
+        desc = 'Flash Treesitter',
+      },
+      {
+        'r',
+        mode = 'o',
+        function()
+          require('flash').remote()
+        end,
+        desc = 'Remote Flash',
+      },
+      {
+        'R',
+        mode = { 'o', 'x' },
+        function()
+          require('flash').treesitter_search()
+        end,
+        desc = 'Treesitter Search',
+      },
+      {
+        '<c-s>',
+        mode = { 'c' },
+        function()
+          require('flash').toggle()
+        end,
+        desc = 'Toggle Flash Search',
+      },
     },
   },
 
@@ -692,7 +793,12 @@ require('lazy').setup({
       vim.keymap.set('n', '<leader>sr', builtin.resume, { desc = '[S]earch [R]esume' })
       vim.keymap.set('n', '<leader>s.', builtin.oldfiles, { desc = '[S]earch Recent Files ("." for repeat)' })
       vim.keymap.set('n', '<leader>sc', builtin.commands, { desc = '[S]earch [C]ommands' })
-      vim.keymap.set('n', '<leader><leader>', builtin.buffers, { desc = '[ ] Find existing buffers' })
+      vim.keymap.set('n', '<leader><leader>', function()
+        require('telescope.builtin').buffers {
+          sort_mru = true,
+          sort_lastused = true,
+        }
+      end, { desc = '[ ] Find existing buffers' })
 
       -- This runs on LSP attach per buffer (see main LSP attach function in 'neovim/nvim-lspconfig' config for more info,
       -- it is better explained there). This allows easily switching between pickers if you prefer using something else!
@@ -902,7 +1008,40 @@ require('lazy').setup({
         --
         -- But for many setups, the LSP (`ts_ls`) will work just fine
         -- ts_ls = {},
-        tsgo = {},
+        tsgo = {
+          settings = {
+            typescript = {
+              updateImportsOnFileMove = { enabled = 'always' },
+              suggest = {
+                completeFunctionCalls = true,
+              },
+              preferences = {
+                importModuleSpecifier = 'shortest',
+                importModuleSpecifierEnding = 'minimal',
+                includePackageJsonAutoImports = 'on',
+              },
+              inlayHints = {
+                parameterNames = {
+                  enabled = 'literals',
+                  suppressWhenArgumentMatchesName = true,
+                },
+                parameterTypes = { enabled = true },
+                variableTypes = { enabled = false },
+                propertyDeclarationTypes = { enabled = true },
+                functionLikeReturnTypes = { enabled = true },
+                enumMemberValues = { enabled = true },
+              },
+            },
+            javascript = {
+              updateImportsOnFileMove = { enabled = 'always' },
+              preferences = {
+                importModuleSpecifier = 'shortest',
+                importModuleSpecifierEnding = 'minimal',
+                includePackageJsonAutoImports = 'on',
+              },
+            },
+          },
+        },
         oxlint = {},
         oxfmt = {},
         biome = {},
@@ -1248,10 +1387,27 @@ require('lazy').setup({
     'nvim-treesitter/nvim-treesitter',
     branch = 'master',
     build = ':TSUpdate',
-    main = 'nvim-treesitter', -- Sets main module to use for opts
+    main = 'nvim-treesitter.configs', -- Sets main module to use for opts
     -- [[ Configure Treesitter ]] See `:help nvim-treesitter`
     opts = {
-      ensure_installed = { 'bash', 'c', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc' },
+      ensure_installed = {
+        'bash',
+        'c',
+        'diff',
+        'html',
+        'lua',
+        'luadoc',
+        'markdown',
+        'markdown_inline',
+        'query',
+        'vim',
+        'vimdoc',
+        'javascript',
+        'typescript',
+        'tsx',
+        'css',
+        'json',
+      },
       -- Autoinstall languages that are not installed
       auto_install = true,
       highlight = {
