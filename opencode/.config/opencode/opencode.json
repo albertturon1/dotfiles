@@ -8,5 +8,6 @@
       ],
       "enabled": true
     }
-  }
+  }, 
+  "plugin": ["opencode-cmux"]
 }

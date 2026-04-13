@@ -176,6 +176,10 @@ vim.o.confirm = true
 --  See `:help hlsearch`
 vim.keymap.set('n', '<Esc>', '<cmd>nohlsearch<CR>')
 
+-- Preserve increment/decrement functionality since <C-a> and <C-x> are used for opencode
+vim.keymap.set('n', '+', '<C-a>', { desc = 'Increment under cursor', noremap = true })
+vim.keymap.set('n', '-', '<C-x>', { desc = 'Decrement under cursor', noremap = true })
+
 -- Diagnostic Config & Keymaps
 -- See :help vim.diagnostic.Opts
 vim.diagnostic.config {
@@ -461,6 +465,99 @@ vim.api.nvim_create_autocmd('TextYankPost', {
   end,
 })
 
+-- restore cursor to file position in previous editing session
+vim.api.nvim_create_autocmd('BufReadPost', {
+  callback = function(args)
+    local mark = vim.api.nvim_buf_get_mark(args.buf, '"')
+    local line_count = vim.api.nvim_buf_line_count(args.buf)
+    if mark[1] > 0 and mark[1] <= line_count then
+      vim.api.nvim_win_set_cursor(0, mark)
+      -- defer centering slightly so it's applied after render
+      vim.schedule(function()
+        vim.cmd 'normal! zz'
+      end)
+    end
+  end,
+})
+
+-- open help in vertical split
+vim.api.nvim_create_autocmd('FileType', {
+  pattern = 'help',
+  command = 'wincmd L',
+})
+
+-- auto resize splits when the terminal's window is resized
+vim.api.nvim_create_autocmd('VimResized', {
+  command = 'wincmd =',
+})
+
+-- no auto continue comments on new line
+vim.api.nvim_create_autocmd('FileType', {
+  group = vim.api.nvim_create_augroup('no_auto_comment', {}),
+  callback = function()
+    vim.opt_local.formatoptions:remove { 'c', 'r', 'o' }
+  end,
+})
+
+-- syntax highlighting for dotenv files
+vim.api.nvim_create_autocmd('BufRead', {
+  group = vim.api.nvim_create_augroup('dotenv_ft', { clear = true }),
+  pattern = { '.env', '.env.*' },
+  callback = function()
+    vim.bo.filetype = 'dosini'
+  end,
+})
+
+-- show cursorline only in active window enable
+vim.api.nvim_create_autocmd({ 'WinEnter', 'BufEnter' }, {
+  group = vim.api.nvim_create_augroup('active_cursorline', { clear = true }),
+  callback = function()
+    vim.opt_local.cursorline = true
+  end,
+})
+
+-- show cursorline only in active window disable
+vim.api.nvim_create_autocmd({ 'WinLeave', 'BufLeave' }, {
+  group = 'active_cursorline',
+  callback = function()
+    vim.opt_local.cursorline = false
+  end,
+})
+
+-- ide like highlight when stopping cursor
+vim.api.nvim_create_autocmd('CursorMoved', {
+  group = vim.api.nvim_create_augroup('LspReferenceHighlight', { clear = true }),
+  desc = 'Highlight references under cursor',
+  callback = function()
+    -- Only run if the cursor is not in insert mode
+    if vim.fn.mode() ~= 'i' then
+      local clients = vim.lsp.get_clients { bufnr = 0 }
+      local supports_highlight = false
+      for _, client in ipairs(clients) do
+        if client.server_capabilities.documentHighlightProvider then
+          supports_highlight = true
+          break -- Found a supporting client, no need to check others
+        end
+      end
+
+      -- 3. Proceed only if an LSP is active AND supports the feature
+      if supports_highlight then
+        vim.lsp.buf.clear_references()
+        vim.lsp.buf.document_highlight()
+      end
+    end
+  end,
+})
+
+-- ide like highlight when stopping cursor
+vim.api.nvim_create_autocmd('CursorMovedI', {
+  group = 'LspReferenceHighlight',
+  desc = 'Clear highlights when entering insert mode',
+  callback = function()
+    vim.lsp.buf.clear_references()
+  end,
+})
+
 -- Auto reload file if changed outside nvim
 vim.o.autoread = true
 
@@ -575,6 +672,26 @@ require('lazy').setup({
         changedelete = { text = '~' }, ---@diagnostic disable-line: missing-fields
       },
     },
+  },
+
+  {
+    'stevearc/oil.nvim',
+    ---@module 'oil'
+    ---@type oil.SetupOpts
+    opts = {
+      view_options = {
+        show_hidden = true,
+      },
+      keymaps = {
+        ['<C-p>'] = false,
+        ['<C-;>'] = 'actions.preview',
+      },
+    },
+    -- Optional dependencies
+    dependencies = { { 'nvim-mini/mini.icons', opts = {} } },
+    -- dependencies = { "nvim-tree/nvim-web-devicons" }, -- use if you prefer nvim-web-devicons
+    -- Lazy loading is not recommended because it is very tricky to make it work correctly in all situations.
+    lazy = false,
   },
 
   -- NOTE: Plugins can also be configured to run Lua code when they are loaded.
@@ -722,6 +839,7 @@ require('lazy').setup({
 
       vim.o.autoread = true -- Required for `opts.events.reload`
 
+      -- Keymaps (using <leader>o prefix to avoid conflicts with <C-a> increment and <C-x> decrement)
       vim.keymap.set({ 'n', 'x' }, '<leader>oa', function()
         require('opencode').ask('@this: ', { submit = true })
       end, { desc = '[O]pencode [A]sk' })
@@ -729,6 +847,10 @@ require('lazy').setup({
       vim.keymap.set({ 'n', 'x' }, '<leader>ox', function()
         require('opencode').select()
       end, { desc = '[O]pencode Select' })
+
+      vim.keymap.set({ 'n', 't' }, '<leader>ot', function()
+        require('opencode').toggle()
+      end, { desc = '[O]pencode [T]oggle' })
 
       vim.keymap.set('n', '<leader>os', function()
         require('opencode').command 'prompt.submit'
@@ -745,13 +867,44 @@ require('lazy').setup({
         return require('opencode').operator '@this ' .. '_'
       end, { desc = 'Add line to opencode', expr = true })
 
+      -- Scrolling
       vim.keymap.set('n', '<S-C-u>', function()
         require('opencode').command 'session.half.page.up'
       end, { desc = 'Scroll opencode up' })
       vim.keymap.set('n', '<S-C-d>', function()
         require('opencode').command 'session.half.page.down'
       end, { desc = 'Scroll opencode down' })
+
+      -- Event handling for opencode events
+      vim.api.nvim_create_autocmd('User', {
+        pattern = 'OpencodeEvent:*',
+        callback = function(args)
+          ---@type opencode.server.Event
+          local event = args.data.event
+          -- vim.notify(vim.inspect(event)) -- Uncomment to debug events
+          if event.type == 'session.idle' then
+            vim.notify('[opencode] Finished responding', vim.log.levels.INFO)
+          end
+        end,
+      })
     end,
+  },
+
+  {
+    'nvim-lualine/lualine.nvim',
+    dependencies = {
+      'nvim-tree/nvim-web-devicons',
+      'nickjvandyke/opencode.nvim',
+    },
+    opts = {
+      sections = {
+        lualine_z = {
+          function()
+            return require('opencode').statusline()
+          end,
+        },
+      },
+    },
   },
 
   {
@@ -880,29 +1033,29 @@ require('lazy').setup({
     end,
   },
 
-  {
-    'nvim-tree/nvim-tree.lua',
-    version = '*',
-    lazy = false,
-    dependencies = {
-      'nvim-tree/nvim-web-devicons',
-    },
-    config = function()
-      require('nvim-tree').setup {
-        update_focused_file = {
-          enable = true,
-          update_root = {
-            enable = true,
-          },
-        },
-        actions = {
-          -- open_file = {
-          --   quit_on_open = true,
-          -- },
-        },
-      }
-    end,
-  },
+  -- {
+  --   'nvim-tree/nvim-tree.lua',
+  --   version = '*',
+  --   lazy = false,
+  --   dependencies = {
+  --     'nvim-tree/nvim-web-devicons',
+  --   },
+  --   config = function()
+  --     require('nvim-tree').setup {
+  --       update_focused_file = {
+  --         enable = true,
+  --         update_root = {
+  --           enable = true,
+  --         },
+  --       },
+  --       actions = {
+  --         -- open_file = {
+  --         --   quit_on_open = true,
+  --         -- },
+  --       },
+  --     }
+  --   end,
+  -- },
 
   {
     -- https://github.com/iamcco/markdown-preview.nvim/issues/690#issuecomment-2510492642 working without npm
@@ -1146,7 +1299,20 @@ require('lazy').setup({
       vim.keymap.set('n', '<leader>W', '<cmd>wall<CR>', { desc = 'Write [A]ll' })
       vim.keymap.set('n', '<leader>x', '<cmd>x<CR>', { desc = 'Save and E[x]it' })
       vim.keymap.set('n', '<leader>Q', '<cmd>qa<CR>', { desc = '[Q]uit all' })
-      vim.keymap.set('n', '<leader>e', '<cmd>NvimTreeToggle<CR>', { desc = '[E]xplorer Toggle' }) -- https://github.com/nvim-tree/nvim-tree.lua
+      -- vim.keymap.set('n', '<leader>e', '<cmd>NvimTreeToggle<CR>', { desc = '[E]xplorer Toggle' }) -- https://github.com/nvim-tree/nvim-tree.lua
+      vim.keymap.set('n', '<leader>e', function()
+        local oil = require 'oil'
+        local bufname = vim.api.nvim_buf_get_name(0)
+
+        if bufname:match '^oil://' then
+          vim.cmd 'bd'
+        else
+          oil.open()
+        end
+      end, { desc = 'Explorer toggle' })
+      vim.keymap.set('n', '<leader>E', function()
+        require('oil').toggle_float()
+      end, { desc = 'Explorer (toggle float)' })
       vim.keymap.set('n', '<leader>a', 'ggVG', { desc = '[A]ll: select whole buffer' })
       vim.keymap.set('n', '<leader>Y', ':%y+<CR>', { desc = 'Yank whole buffer to clipboard' })
       vim.keymap.set('n', '<C-d>', '<C-d>zz')
@@ -1689,49 +1855,49 @@ require('lazy').setup({
       --  Check out: https://github.com/nvim-mini/mini.nvim
     end,
   },
-  { -- Highlight, edit, and navigate code
-    'nvim-treesitter/nvim-treesitter',
-    branch = 'master',
-    build = ':TSUpdate',
-    main = 'nvim-treesitter.configs', -- Sets main module to use for opts
-    -- [[ Configure Treesitter ]] See `:help nvim-treesitter`
-    opts = {
-      ensure_installed = {
-        'bash',
-        'c',
-        'diff',
-        'html',
-        'lua',
-        'luadoc',
-        'markdown',
-        'markdown_inline',
-        'query',
-        'vim',
-        'vimdoc',
-        'javascript',
-        'typescript',
-        'tsx',
-        'css',
-        'json',
-      },
-      -- Autoinstall languages that are not installed
-      auto_install = true,
-      highlight = {
-        enable = true,
-        -- Some languages depend on vim's regex highlighting system (such as Ruby) for indent rules.
-        --  If you are experiencing weird indenting issues, add the language to
-        --  the list of additional_vim_regex_highlighting and disabled languages for indent.
-        additional_vim_regex_highlighting = { 'ruby' },
-      },
-      indent = { enable = true, disable = { 'ruby' } },
-    },
-    -- There are additional nvim-treesitter modules that you can use to interact
-    -- with nvim-treesitter. You should go explore a few and see what interests you:
-    --
-    --    - Incremental selection: Included, see `:help nvim-treesitter-incremental-selection-mod`
-    --    - Show your current context: https://github.com/nvim-treesitter/nvim-treesitter-context
-    --    - Treesitter + textobjects: https://github.com/nvim-treesitter/nvim-treesitter-textobjects
-  },
+  -- { -- Highlight, edit, and navigate code
+  --   'nvim-treesitter/nvim-treesitter',
+  --   branch = 'master',
+  --   build = ':TSUpdate',
+  --   main = 'nvim-treesitter.configs', -- Sets main module to use for opts
+  --   -- [[ Configure Treesitter ]] See `:help nvim-treesitter`
+  --   opts = {
+  --     ensure_installed = {
+  --       'bash',
+  --       'c',
+  --       'diff',
+  --       'html',
+  --       'lua',
+  --       'luadoc',
+  --       'markdown',
+  --       'markdown_inline',
+  --       'query',
+  --       'vim',
+  --       'vimdoc',
+  --       'javascript',
+  --       'typescript',
+  --       'tsx',
+  --       'css',
+  --       'json',
+  --     },
+  --     -- Autoinstall languages that are not installed
+  --     auto_install = true,
+  --     highlight = {
+  --       enable = true,
+  --       -- Some languages depend on vim's regex highlighting system (such as Ruby) for indent rules.
+  --       --  If you are experiencing weird indenting issues, add the language to
+  --       --  the list of additional_vim_regex_highlighting and disabled languages for indent.
+  --       additional_vim_regex_highlighting = { 'ruby' },
+  --     },
+  --     indent = { enable = true, disable = { 'ruby' } },
+  --   },
+  --   -- There are additional nvim-treesitter modules that you can use to interact
+  --   -- with nvim-treesitter. You should go explore a few and see what interests you:
+  --   --
+  --   --    - Incremental selection: Included, see `:help nvim-treesitter-incremental-selection-mod`
+  --   --    - Show your current context: https://github.com/nvim-treesitter/nvim-treesitter-context
+  --   --    - Treesitter + textobjects: https://github.com/nvim-treesitter/nvim-treesitter-textobjects
+  -- },
 
   -- The following comments only work if you have downloaded the kickstart repo, not just copy pasted the
   -- init.lua. If you want these files, they are in the repository, so you can just download them and
