@@ -20,12 +20,10 @@ cd ~/dotfiles
 - **aerospace** - i3-like tiling window manager for macOS
 - **skhd** - Hotkey daemon (skhd.zig fork)
 - **nvim** - Neovim configuration (kickstart.nvim based)
-- **tmux** - Terminal multiplexer with TPM
 - **zsh** - Shell configuration
 - **lazygit** - Git TUI
 - **opencode** - OpenCode AI assistant config
 - **fff-mcp** - MCP server for file navigation used by OpenCode
-- **bin** - Custom scripts (xws)
 
 ## Post-Installation
 
@@ -35,7 +33,3 @@ cd ~/dotfiles
    - Run: `skhd --restart-service`
 
 2. **Restart terminal** or run: `source ~/.zshrc`
-
-## Custom Scripts
-
-- `xws` - Session workspace manager for tmux/opencode

@@ -35,27 +35,12 @@ fi
 # Stow all packages using --adopt to take over existing files
 echo "Stowing all packages..."
 
-for package in aerospace bin lazygit nvim opencode skhd tmux zsh; do
+for package in aerospace bin lazygit nvim opencode skhd zsh; do
     if [ -d "$package" ]; then
         echo "Stowing $package..."
         stow -v --adopt --no-folding -t ~ "$package"
     fi
 done
-
-# Install TPM (Tmux Plugin Manager) if not present
-if [ -f "$HOME/.config/tmux/tmux.conf" ]; then
-    TPM_PATH="$HOME/.config/tmux/plugins/tpm"
-    if [ ! -d "$TPM_PATH" ]; then
-        echo "Installing TPM (Tmux Plugin Manager)..."
-        git clone https://github.com/tmux-plugins/tpm "$TPM_PATH"
-    fi
-    
-    # Install tmux plugins
-    if [ -x "$TPM_PATH/bin/install_plugins" ]; then
-        echo "Installing tmux plugins..."
-        "$TPM_PATH/bin/install_plugins" 2>/dev/null || echo "  Note: Some plugins may need manual installation with prefix + I in tmux"
-    fi
-fi
 
 echo "Installing FFF MCP..."
 curl -fsSL https://dmtrkovalenko.dev/install-fff-mcp.sh | bash
