@@ -2,6 +2,9 @@ gui:
   showCommandLog: false
   sidePanelWidth: 0.2
   border: single 
+  portraitMode: always
+  nerdFontsVersion: 2
+  showNumstatInFilesView: true
 
 git:
   pagers:

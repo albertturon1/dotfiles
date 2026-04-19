@@ -7,20 +7,18 @@ if [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
     export PATH="$HOME/.local/bin:$PATH"
 fi
 
+alias nvr='nvim -c "DiffviewOpen"'
+alias nv='nvim .'
+
 # Editor
 export EDITOR=nvim
 
 # XDG directories
 export XDG_CONFIG_HOME="$HOME/.config"
 
-# Enable completions from dotfiles
-fpath+=("$HOME/.zsh/completions")
-
 # Initialize completions
 autoload -Uz compinit
 compinit
-
-zstyle ':completion:*:*:xws:*' insert-unambiguous false
 
 prompt_dir_2() {
   local dir="${PWD/#$HOME/~}"

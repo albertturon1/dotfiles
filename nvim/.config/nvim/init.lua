@@ -465,20 +465,20 @@ vim.api.nvim_create_autocmd('TextYankPost', {
   end,
 })
 
--- restore cursor to file position in previous editing session
-vim.api.nvim_create_autocmd('BufReadPost', {
-  callback = function(args)
-    local mark = vim.api.nvim_buf_get_mark(args.buf, '"')
-    local line_count = vim.api.nvim_buf_line_count(args.buf)
-    if mark[1] > 0 and mark[1] <= line_count then
-      vim.api.nvim_win_set_cursor(0, mark)
-      -- defer centering slightly so it's applied after render
-      vim.schedule(function()
-        vim.cmd 'normal! zz'
-      end)
-    end
-  end,
-})
+-- -- restore cursor to file position in previous editing session
+-- vim.api.nvim_create_autocmd('BufReadPost', {
+--   callback = function(args)
+--     local mark = vim.api.nvim_buf_get_mark(args.buf, '"')
+--     local line_count = vim.api.nvim_buf_line_count(args.buf)
+--     if mark[1] > 0 and mark[1] <= line_count then
+--       vim.api.nvim_win_set_cursor(0, mark)
+--       -- defer centering slightly so it's applied after render
+--       vim.schedule(function()
+--         vim.cmd 'normal! zz'
+--       end)
+--     end
+--   end,
+-- })
 
 -- open help in vertical split
 vim.api.nvim_create_autocmd('FileType', {
@@ -908,55 +908,6 @@ require('lazy').setup({
   },
 
   {
-    'folke/flash.nvim',
-    event = 'VeryLazy',
-    ---@type Flash.Config
-    opts = {},
-    keys = {
-      {
-        's',
-        mode = { 'n', 'x', 'o' },
-        function()
-          require('flash').jump()
-        end,
-        desc = 'Flash',
-      },
-      {
-        'S',
-        mode = { 'n', 'x', 'o' },
-        function()
-          require('flash').treesitter()
-        end,
-        desc = 'Flash Treesitter',
-      },
-      {
-        'r',
-        mode = 'o',
-        function()
-          require('flash').remote()
-        end,
-        desc = 'Remote Flash',
-      },
-      {
-        'R',
-        mode = { 'o', 'x' },
-        function()
-          require('flash').treesitter_search()
-        end,
-        desc = 'Treesitter Search',
-      },
-      {
-        '<c-s>',
-        mode = { 'c' },
-        function()
-          require('flash').toggle()
-        end,
-        desc = 'Toggle Flash Search',
-      },
-    },
-  },
-
-  {
     'f-person/git-blame.nvim',
     -- load the plugin at startup
     event = 'VeryLazy',
@@ -972,28 +923,6 @@ require('lazy').setup({
       date_format = '%m.%d.%Y %H:%M:%S', -- template for the date, check Date format section for more options
       virtual_text_column = 1, -- virtual text start column, check Start virtual text at column section for more options
     },
-  },
-
-  {
-    'NeogitOrg/neogit',
-    cmd = 'Neogit',
-    dependencies = {
-      'nvim-lua/plenary.nvim',
-      'sindrets/diffview.nvim',
-      'nvim-telescope/telescope.nvim',
-    },
-    keys = {
-      { '<leader>gg', '<cmd>Neogit<cr>', desc = '[G]it status (Neo[g]it)' },
-      { '<leader>gc', '<cmd>Neogit commit<cr>', desc = '[G]it [C]ommit' },
-    },
-    config = function()
-      require('neogit').setup {
-        kind = 'split',
-        integrations = {
-          diffview = true,
-        },
-      }
-    end,
   },
 
   {
@@ -1285,7 +1214,10 @@ require('lazy').setup({
 
           -- Fuzzy find all the symbols in your current workspace.
           -- Similar to document symbols, except searches over your entire project.
-          vim.keymap.set('n', 'gW', builtin.lsp_dynamic_workspace_symbols, { buffer = buf, desc = 'Open Workspace Symbols' })
+          vim.keymap.set('n', 'gW', builtin.lsp_dynamic_workspace_symbols, { buffer = buf, desc = 'Open Workspace Symbols' }) {
+            buffer = buf,
+            desc = 'Open Workspace Symbols',
+          }
 
           -- Jump to the type of the word under your cursor.
           -- Useful when you're not sure what type a variable is and you want to see
@@ -1855,49 +1787,49 @@ require('lazy').setup({
       --  Check out: https://github.com/nvim-mini/mini.nvim
     end,
   },
-  -- { -- Highlight, edit, and navigate code
-  --   'nvim-treesitter/nvim-treesitter',
-  --   branch = 'master',
-  --   build = ':TSUpdate',
-  --   main = 'nvim-treesitter.configs', -- Sets main module to use for opts
-  --   -- [[ Configure Treesitter ]] See `:help nvim-treesitter`
-  --   opts = {
-  --     ensure_installed = {
-  --       'bash',
-  --       'c',
-  --       'diff',
-  --       'html',
-  --       'lua',
-  --       'luadoc',
-  --       'markdown',
-  --       'markdown_inline',
-  --       'query',
-  --       'vim',
-  --       'vimdoc',
-  --       'javascript',
-  --       'typescript',
-  --       'tsx',
-  --       'css',
-  --       'json',
-  --     },
-  --     -- Autoinstall languages that are not installed
-  --     auto_install = true,
-  --     highlight = {
-  --       enable = true,
-  --       -- Some languages depend on vim's regex highlighting system (such as Ruby) for indent rules.
-  --       --  If you are experiencing weird indenting issues, add the language to
-  --       --  the list of additional_vim_regex_highlighting and disabled languages for indent.
-  --       additional_vim_regex_highlighting = { 'ruby' },
-  --     },
-  --     indent = { enable = true, disable = { 'ruby' } },
-  --   },
-  --   -- There are additional nvim-treesitter modules that you can use to interact
-  --   -- with nvim-treesitter. You should go explore a few and see what interests you:
-  --   --
-  --   --    - Incremental selection: Included, see `:help nvim-treesitter-incremental-selection-mod`
-  --   --    - Show your current context: https://github.com/nvim-treesitter/nvim-treesitter-context
-  --   --    - Treesitter + textobjects: https://github.com/nvim-treesitter/nvim-treesitter-textobjects
-  -- },
+  { -- Highlight, edit, and navigate code
+    'nvim-treesitter/nvim-treesitter',
+    branch = 'master',
+    build = ':TSUpdate',
+    main = 'nvim-treesitter.configs', -- Sets main module to use for opts
+    -- [[ Configure Treesitter ]] See `:help nvim-treesitter`
+    opts = {
+      ensure_installed = {
+        'bash',
+        'c',
+        'diff',
+        'html',
+        'lua',
+        'luadoc',
+        'markdown',
+        'markdown_inline',
+        'query',
+        'vim',
+        'vimdoc',
+        'javascript',
+        'typescript',
+        'tsx',
+        'css',
+        'json',
+      },
+      -- Autoinstall languages that are not installed
+      auto_install = true,
+      highlight = {
+        enable = true,
+        -- Some languages depend on vim's regex highlighting system (such as Ruby) for indent rules.
+        --  If you are experiencing weird indenting issues, add the language to
+        --  the list of additional_vim_regex_highlighting and disabled languages for indent.
+        additional_vim_regex_highlighting = { 'ruby' },
+      },
+      indent = { enable = true, disable = { 'ruby' } },
+    },
+    -- There are additional nvim-treesitter modules that you can use to interact
+    -- with nvim-treesitter. You should go explore a few and see what interests you:
+    --
+    --    - Incremental selection: Included, see `:help nvim-treesitter-incremental-selection-mod`
+    --    - Show your current context: https://github.com/nvim-treesitter/nvim-treesitter-context
+    --    - Treesitter + textobjects: https://github.com/nvim-treesitter/nvim-treesitter-textobjects
+  },
 
   -- The following comments only work if you have downloaded the kickstart repo, not just copy pasted the
   -- init.lua. If you want these files, they are in the repository, so you can just download them and
