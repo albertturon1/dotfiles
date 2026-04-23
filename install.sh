@@ -35,7 +35,7 @@ fi
 # Stow all packages using --adopt to take over existing files
 echo "Stowing all packages..."
 
-for package in aerospace bin lazygit nvim opencode skhd zsh; do
+for package in aerospace bin lazygit nvim opencode skhd zsh ignore; do
     if [ -d "$package" ]; then
         echo "Stowing $package..."
         stow -v --adopt --no-folding -t ~ "$package"

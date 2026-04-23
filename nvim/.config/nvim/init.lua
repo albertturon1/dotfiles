@@ -415,8 +415,8 @@ local function reopen_last_closed_buffer()
 end
 
 vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagnostic [Q]uickfix list' })
-vim.keymap.set('n', '<leader>n', '<cmd>bnext<CR>', { desc = 'Buffer next' })
-vim.keymap.set('n', '<leader>p', '<cmd>bprevious<CR>', { desc = 'Buffer previous' })
+vim.keymap.set('n', '<leader>]', '<cmd>bnext<CR>', { desc = 'Buffer next' })
+vim.keymap.set('n', '<leader>[', '<cmd>bprevious<CR>', { desc = 'Buffer previous' })
 vim.keymap.set('n', '<leader>c', function()
   close_buffer_keep_prev()
 end, { desc = 'Buffer close' })
