@@ -7,6 +7,7 @@ if [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
     export PATH="$HOME/.local/bin:$PATH"
 fi
 
+alias lg="lazygit"
 alias nvr='nvim -c "DiffviewOpen"'
 alias nv='nvim .'
 

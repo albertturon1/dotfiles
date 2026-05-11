@@ -42,6 +42,8 @@ for package in aerospace bin lazygit nvim opencode skhd zsh ignore; do
     fi
 done
 
+git config --global core.excludesfile ~/.gitignore_global
+
 echo "Installing FFF MCP..."
 curl -fsSL https://dmtrkovalenko.dev/install-fff-mcp.sh | bash
 

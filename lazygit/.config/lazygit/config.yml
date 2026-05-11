@@ -1,7 +1,6 @@
 gui:
   showCommandLog: false
   border: single 
-  portraitMode: always
   nerdFontsVersion: 2
   showNumstatInFilesView: true
 

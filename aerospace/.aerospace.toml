@@ -178,14 +178,6 @@ if.app-id = 'com.microsoft.VSCode'
 run = 'move-node-to-workspace D'
 
 [[on-window-detected]]
-if.app-id = 'com.todesktop.230313mzl4w4u92'
-run = 'move-node-to-workspace D'
-
-[[on-window-detected]]
-if.app-id = 'com.todesktop.230313mzl4w4u92'
-run = 'move-node-to-workspace A'
-
-[[on-window-detected]]
 if.app-id = 'com.google.Chrome'
 run = 'move-node-to-workspace D'
 
@@ -210,8 +202,22 @@ if.app-id = 'dev.zed.Zed'
 run = 'move-node-to-workspace A'
 
 [[on-window-detected]]
-if.app-id = 'com.mitchellh.ghostty'
+if.app-id = 'com.superset.desktop'
 run = 'move-node-to-workspace A'
+
+[[on-window-detected]]
+if.app-id = 'com.mitchellh.ghostty'
+run = 'move-node-to-workspace D'
+
+# Slack
+[[on-window-detected]]
+if.app-id = 'com.tinyspeck.slackmacgap'
+run = 'move-node-to-workspace 1'
+
+# Zoom
+[[on-window-detected]]
+if.app-id = 'us.zoom.xos'
+run = 'move-node-to-workspace 2'
 
 # Floating apps
 [[on-window-detected]]
@@ -233,13 +239,3 @@ run = 'layout floating'
 [[on-window-detected]]
 if.app-id = 'com.spotify.client'
 run = 'layout floating'
-
-# Slack
-[[on-window-detected]]
-if.app-id = 'com.tinyspeck.slackmacgap'
-run = 'move-node-to-workspace 1'
-
-# Zoom
-[[on-window-detected]]
-if.app-id = 'us.zoom.xos'
-run = 'move-node-to-workspace 2'
