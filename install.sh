@@ -22,6 +22,42 @@ if ! command -v brew &> /dev/null; then
     fi
 fi
 
+MODEL_ALIAS="$HOME/.models/zeta-2.gguf"
+MODEL_REPO="bartowski/zed-industries_zeta-2-GGUF:Q8_0"
+
+# create stable models dir
+mkdir -p "$HOME/.models"
+
+# check if model already exists (stable symlink target)
+if [ -f "$MODEL_ALIAS" ]; then
+    echo "Zeta 2 already installed at $MODEL_ALIAS"
+else
+    echo "Zeta 2 not found. Downloading via llama.cpp..."
+
+    # trigger download into HF cache
+    llama-server -hf "$MODEL_REPO" --no-warmup --port 9999 >/dev/null 2>&1 &
+    PID=$!
+
+    # wait a bit so it downloads
+    sleep 5
+
+    # kill server after download init
+    kill $PID 2>/dev/null || true
+
+    # find downloaded GGUF (no hardcoded hash)
+    FOUND_PATH=$(find "$HOME/.cache/huggingface" -name "*zeta-2*Q8_0.gguf" | head -n 1)
+
+    if [ -z "$FOUND_PATH" ]; then
+        echo "❌ Failed to locate downloaded model"
+        exit 1
+    fi
+
+    # create stable symlink
+    ln -sf "$FOUND_PATH" "$MODEL_ALIAS"
+
+    echo "✅ Zeta 2 installed → $MODEL_ALIAS"
+fi
+
 # Install packages from Brewfile (ignore errors for already installed packages)
 echo "Installing packages from Brewfile..."
 brew bundle --file="$DOTFILES_DIR/Brewfile" --no-upgrade || true
@@ -35,7 +71,7 @@ fi
 # Stow all packages using --adopt to take over existing files
 echo "Stowing all packages..."
 
-for package in aerospace bin lazygit nvim opencode skhd zsh ignore; do
+for package in aerospace bin hunk lazygit nvim opencode skhd zsh ignore; do
     if [ -d "$package" ]; then
         echo "Stowing $package..."
         stow -v --adopt --no-folding -t ~ "$package"
@@ -58,8 +94,9 @@ fi
 echo "Starting skhd service..."
 skhd --start-service 2>/dev/null || skhd --restart-service 2>/dev/null || true
 
-# Grant accessibility permissions reminder (only if not already granted)
-if ! skhd --status 2>&1 | grep -q "Accessibility permissions: Granted"; then
+# Grant accessibility permissions reminder (only if skhd is not actually running)
+sleep 1
+if ! skhd --status 2>&1 | grep -q "Currently running: Yes"; then
     echo ""
     echo "====================================================="
     echo "IMPORTANT: Accessibility Permissions Required"

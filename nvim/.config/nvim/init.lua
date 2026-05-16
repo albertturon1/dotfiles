@@ -414,12 +414,22 @@ local function reopen_last_closed_buffer()
   vim.notify('No recently closed file buffer', vim.log.levels.INFO)
 end
 
-vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagnostic [Q]uickfix list' })
+vim.keymap.set('n', '<C-h>', '<C-w>h')
+vim.keymap.set('n', '<C-j>', '<C-w>j')
+vim.keymap.set('n', '<C-k>', '<C-w>k')
+vim.keymap.set('n', '<C-l>', '<C-w>l')
+
+vim.keymap.set('n', '<leader>q', ':q<CR>')
+
 vim.keymap.set('n', '<leader>]', '<cmd>bnext<CR>', { desc = 'Buffer next' })
 vim.keymap.set('n', '<leader>[', '<cmd>bprevious<CR>', { desc = 'Buffer previous' })
 vim.keymap.set('n', '<leader>c', function()
+  local win = vim.api.nvim_get_current_win()
   close_buffer_keep_prev()
-end, { desc = 'Buffer close' })
+  if vim.api.nvim_win_is_valid(win) and #vim.api.nvim_tabpage_list_wins(0) > 1 then
+    pcall(vim.api.nvim_win_close, win, true)
+  end
+end, { desc = 'Close buffer and window' })
 vim.keymap.set('n', '<leader>C', reopen_last_closed_buffer, { desc = 'Buffer reopen last closed file' })
 
 -- Exit terminal mode in the builtin terminal with a shortcut that is a bit easier
@@ -430,26 +440,39 @@ vim.keymap.set('n', '<leader>C', reopen_last_closed_buffer, { desc = 'Buffer reo
 -- or just use <C-\><C-n> to exit terminal mode
 vim.keymap.set('t', '<Esc><Esc>', '<C-\\><C-n>', { desc = 'Exit terminal mode' })
 
--- TIP: Disable arrow keys in normal mode
--- vim.keymap.set('n', '<left>', '<cmd>echo "Use h to move!!"<CR>')
--- vim.keymap.set('n', '<right>', '<cmd>echo "Use l to move!!"<CR>')
--- vim.keymap.set('n', '<up>', '<cmd>echo "Use k to move!!"<CR>')
--- vim.keymap.set('n', '<down>', '<cmd>echo "Use j to move!!"<CR>')
+-- Custom saving
+vim.keymap.set('n', '<leader>w', '<cmd>update<CR>', { desc = '[W]rite' })
+vim.keymap.set('n', '<leader>W', '<cmd>wall<CR>', { desc = 'Write [A]ll' })
+vim.keymap.set('n', '<leader>x', '<cmd>x<CR>', { desc = 'Save and E[x]it' })
+vim.keymap.set('n', '<leader>Q', '<cmd>qa<CR>', { desc = '[Q]uit all' })
+vim.keymap.set('n', '<leader>X', function()
+  local current = vim.api.nvim_get_current_buf()
 
--- Keybinds to make split navigation easier.
---  Use CTRL+<hjkl> to switch between windows
---
---  See `:help wincmd` for a list of all window commands
--- vim.keymap.set('n', '<C-h>', '<C-w><C-h>', { desc = 'Move focus to the left window' })
--- vim.keymap.set('n', '<C-l>', '<C-w><C-l>', { desc = 'Move focus to the right window' })
--- vim.keymap.set('n', '<C-j>', '<C-w><C-j>', { desc = 'Move focus to the lower window' })
--- vim.keymap.set('n', '<C-k>', '<C-w><C-k>', { desc = 'Move focus to the upper window' })
+  for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+    if buf ~= current and vim.api.nvim_buf_is_loaded(buf) then
+      vim.api.nvim_buf_delete(buf, {})
+    end
+  end
+end, {
+  desc = 'Close all other buffers',
+})
+vim.keymap.set('n', '<leader>e', function()
+  local oil = require 'oil'
+  local bufname = vim.api.nvim_buf_get_name(0)
 
--- NOTE: Some terminals have colliding keymaps or are not able to send distinct keycodes
--- vim.keymap.set("n", "<C-S-h>", "<C-w>H", { desc = "Move window to the left" })
--- vim.keymap.set("n", "<C-S-l>", "<C-w>L", { desc = "Move window to the right" })
--- vim.keymap.set("n", "<C-S-j>", "<C-w>J", { desc = "Move window to the lower" })
--- vim.keymap.set("n", "<C-S-k>", "<C-w>K", { desc = "Move window to the upper" })
+  if bufname:match '^oil://' then
+    vim.cmd 'bd'
+  else
+    oil.open()
+  end
+end, { desc = 'Explorer toggle' })
+vim.keymap.set('n', '<leader>E', function()
+  require('oil').toggle_float()
+end, { desc = 'Explorer (toggle float)' })
+vim.keymap.set('n', '<leader>a', 'ggVG', { desc = '[A]ll: select whole buffer' })
+vim.keymap.set('n', '<leader>Y', ':%y+<CR>', { desc = 'Yank whole buffer to clipboard' })
+vim.keymap.set('n', '<C-d>', '<C-d>zz')
+vim.keymap.set('n', '<C-u>', '<C-u>zz')
 
 -- [[ Basic Autocommands ]]
 --  See `:help lua-guide-autocommands`
@@ -459,7 +482,7 @@ vim.keymap.set('t', '<Esc><Esc>', '<C-\\><C-n>', { desc = 'Exit terminal mode' }
 --  See `:help vim.hl.on_yank()`
 vim.api.nvim_create_autocmd('TextYankPost', {
   desc = 'Highlight when yanking (copying) text',
-  group = vim.api.nvim_create_augroup('kickstart-highlight-yank', { clear = true }),
+  group = vim.api.nvim_create_augroup('highlight-yank', { clear = true }),
   callback = function()
     vim.hl.on_yank()
   end,
@@ -493,7 +516,7 @@ vim.api.nvim_create_autocmd('VimResized', {
 
 -- no auto continue comments on new line
 vim.api.nvim_create_autocmd('FileType', {
-  group = vim.api.nvim_create_augroup('no_auto_comment', {}),
+  group = vim.api.nvim_create_augroup('no-auto-comment', {}),
   callback = function()
     vim.opt_local.formatoptions:remove { 'c', 'r', 'o' }
   end,
@@ -501,7 +524,7 @@ vim.api.nvim_create_autocmd('FileType', {
 
 -- syntax highlighting for dotenv files
 vim.api.nvim_create_autocmd('BufRead', {
-  group = vim.api.nvim_create_augroup('dotenv_ft', { clear = true }),
+  group = vim.api.nvim_create_augroup('dotenv-ft', { clear = true }),
   pattern = { '.env', '.env.*' },
   callback = function()
     vim.bo.filetype = 'dosini'
@@ -510,7 +533,7 @@ vim.api.nvim_create_autocmd('BufRead', {
 
 -- show cursorline only in active window enable
 vim.api.nvim_create_autocmd({ 'WinEnter', 'BufEnter' }, {
-  group = vim.api.nvim_create_augroup('active_cursorline', { clear = true }),
+  group = vim.api.nvim_create_augroup('active-cursorline', { clear = true }),
   callback = function()
     vim.opt_local.cursorline = true
   end,
@@ -518,7 +541,7 @@ vim.api.nvim_create_autocmd({ 'WinEnter', 'BufEnter' }, {
 
 -- show cursorline only in active window disable
 vim.api.nvim_create_autocmd({ 'WinLeave', 'BufLeave' }, {
-  group = 'active_cursorline',
+  group = 'active-cursorline',
   callback = function()
     vim.opt_local.cursorline = false
   end,
@@ -561,7 +584,7 @@ vim.api.nvim_create_autocmd('CursorMovedI', {
 -- Auto reload file if changed outside nvim
 vim.o.autoread = true
 
-local timer = assert((vim.uv or vim.loop).new_timer())
+local timer = assert(vim.uv.new_timer())
 
 -- Periodically check for file changes.
 -- This is required because 'autoread' typically only triggers on FocusGained or BufEnter.
@@ -590,7 +613,7 @@ vim.api.nvim_create_autocmd({ 'CursorHold', 'FocusGained', 'BufEnter' }, {
 
 -- Handle notification when a file is changed externally (e.g., by AI)
 vim.api.nvim_create_autocmd('FileChangedShellPost', {
-  group = vim.api.nvim_create_augroup('kickstart-autoread-notification', { clear = true }),
+  group = vim.api.nvim_create_augroup('autoread-notification', { clear = true }),
   callback = function()
     -- If the buffer has local changes (modified), autoread will NOT reload the file.
     -- In this case, we need to explicitly warn the user about the conflict.
@@ -616,7 +639,7 @@ end, {})
 -- [[ Install `lazy.nvim` plugin manager ]]
 --    See `:help lazy.nvim.txt` or https://github.com/folke/lazy.nvim for more info
 local lazypath = vim.fn.stdpath 'data' .. '/lazy/lazy.nvim'
-if not (vim.uv or vim.loop).fs_stat(lazypath) then
+if not vim.uv.fs_stat(lazypath) then
   local lazyrepo = 'https://github.com/folke/lazy.nvim.git'
   local out = vim.fn.system { 'git', 'clone', '--filter=blob:none', '--branch=stable', lazyrepo, lazypath }
   if vim.v.shell_error ~= 0 then
@@ -624,9 +647,7 @@ if not (vim.uv or vim.loop).fs_stat(lazypath) then
   end
 end
 
----@type vim.Option
-local rtp = vim.opt.rtp
-rtp:prepend(lazypath)
+vim.opt.rtp:prepend(lazypath)
 
 -- [[ Configure and install plugins ]]
 --
@@ -671,6 +692,10 @@ require('lazy').setup({
         topdelete = { text = '‾' }, ---@diagnostic disable-line: missing-fields
         changedelete = { text = '~' }, ---@diagnostic disable-line: missing-fields
       },
+      current_line_blame = false,
+    },
+    keys = {
+      { '<leader>tb', '<cmd>Gitsigns blame<CR>', desc = 'Toggle Git Blame' },
     },
   },
 
@@ -722,7 +747,6 @@ require('lazy').setup({
       spec = {
         { '<leader>s', group = '[S]earch', mode = { 'n', 'v' } },
         { '<leader>t', group = '[T]oggle' },
-        { '<leader>h', group = 'Git [H]unk', mode = { 'n', 'v' } }, -- Enable gitsigns recommended keymaps first
         { 'gr', group = 'LSP Actions', mode = { 'n' } },
         { '<leader>o', group = '[O]pencode', mode = { 'n', 'x' } },
       },
@@ -778,33 +802,6 @@ require('lazy').setup({
   },
 
   {
-    'christoomey/vim-tmux-navigator',
-    cmd = {
-      'TmuxNavigateLeft',
-      'TmuxNavigateDown',
-      'TmuxNavigateUp',
-      'TmuxNavigateRight',
-      'TmuxNavigatePrevious',
-      'TmuxNavigatorProcessList',
-    },
-    keys = {
-      { '<c-h>', '<cmd><C-U>TmuxNavigateLeft<cr>' },
-      { '<c-j>', '<cmd><C-U>TmuxNavigateDown<cr>' },
-      { '<c-k>', '<cmd><C-U>TmuxNavigateUp<cr>' },
-      { '<c-l>', '<cmd><C-U>TmuxNavigateRight<cr>' },
-      { '<c-\\>', '<cmd><C-U>TmuxNavigatePrevious<cr>' },
-    },
-  },
-
-  {
-    'tadaa/vimade',
-    opts = {
-      recipe = { 'default', { animate = false } },
-      fadelevel = 0.75,
-    },
-  },
-
-  {
     'nickjvandyke/opencode.nvim',
     version = '*', -- Latest stable release
     dependencies = {
@@ -836,8 +833,6 @@ require('lazy').setup({
       vim.g.opencode_opts = {
         -- Your configuration, if any; goto definition on the type or field for details
       }
-
-      vim.o.autoread = true -- Required for `opts.events.reload`
 
       -- Keymaps (using <leader>o prefix to avoid conflicts with <C-a> increment and <C-x> decrement)
       vim.keymap.set({ 'n', 'x' }, '<leader>oa', function()
@@ -908,85 +903,6 @@ require('lazy').setup({
   },
 
   {
-    'f-person/git-blame.nvim',
-    -- load the plugin at startup
-    event = 'VeryLazy',
-    -- Because of the keys part, you will be lazy loading this plugin.
-    -- The plugin will only load once one of the keys is used.
-    -- If you want to load the plugin at startup, add something like event = "VeryLazy",
-    -- or lazy = false. One of both options will work.
-    opts = {
-      -- your configuration comes here
-      -- for example
-      enabled = true, -- if you want to enable the plugin
-      message_template = '<summary> • <author> • <date> • <<sha>>', -- template for the blame message, check the Message template section for more options
-      date_format = '%m.%d.%Y %H:%M:%S', -- template for the date, check Date format section for more options
-      virtual_text_column = 1, -- virtual text start column, check Start virtual text at column section for more options
-    },
-  },
-
-  {
-    'sindrets/diffview.nvim',
-    dependencies = { 'nvim-lua/plenary.nvim' },
-    cmd = {
-      'DiffviewOpen',
-      'DiffviewClose',
-      'DiffviewToggleFiles',
-      'DiffviewFocusFiles',
-      'DiffviewFileHistory',
-    },
-    keys = {
-      { '<leader>gd', '<cmd>DiffviewOpen<cr>', desc = '[G]it [D]iff view' },
-      { '<leader>gq', '<cmd>DiffviewClose<cr>', desc = '[G]it diff [Q]uit' },
-      { '<leader>gt', '<cmd>DiffviewToggleFiles<cr>', desc = '[G]it [T]oggle files' },
-      { '<leader>gb', '<cmd>DiffviewFileHistory %<cr>', desc = '[G]it file history ([B]uffer)' },
-      { '<leader>gB', '<cmd>DiffviewFileHistory<cr>', desc = '[G]it repo history' },
-    },
-    config = function()
-      require('diffview').setup {
-        keymaps = {
-          view = {
-            { 'n', 'q', '<cmd>DiffviewClose<cr>', { desc = 'Close Diffview' } },
-          },
-          file_panel = {
-            { 'n', 'q', '<cmd>DiffviewClose<cr>', { desc = 'Close Diffview' } },
-          },
-          file_history_panel = {
-            { 'n', 'q', '<cmd>DiffviewClose<cr>', { desc = 'Close Diffview' } },
-          },
-          option_panel = {
-            { 'n', 'q', '<cmd>DiffviewClose<cr>', { desc = 'Close Diffview' } },
-          },
-        },
-      }
-    end,
-  },
-
-  -- {
-  --   'nvim-tree/nvim-tree.lua',
-  --   version = '*',
-  --   lazy = false,
-  --   dependencies = {
-  --     'nvim-tree/nvim-web-devicons',
-  --   },
-  --   config = function()
-  --     require('nvim-tree').setup {
-  --       update_focused_file = {
-  --         enable = true,
-  --         update_root = {
-  --           enable = true,
-  --         },
-  --       },
-  --       actions = {
-  --         -- open_file = {
-  --         --   quit_on_open = true,
-  --         -- },
-  --       },
-  --     }
-  --   end,
-  -- },
-
-  {
     -- https://github.com/iamcco/markdown-preview.nvim/issues/690#issuecomment-2510492642 working without npm
     'iamcco/markdown-preview.nvim',
     cmd = { 'MarkdownPreviewToggle', 'MarkdownPreview', 'MarkdownPreviewStop' },
@@ -997,8 +913,6 @@ require('lazy').setup({
   {
     'MeanderingProgrammer/render-markdown.nvim',
     dependencies = { 'nvim-treesitter/nvim-treesitter', 'nvim-mini/mini.nvim' }, -- if you use the mini.nvim suite
-    -- dependencies = { 'nvim-treesitter/nvim-treesitter', 'nvim-mini/mini.icons' },        -- if you use standalone mini plugins
-    -- dependencies = { 'nvim-treesitter/nvim-treesitter', 'nvim-tree/nvim-web-devicons' }, -- if you prefer nvim-web-devicons
     ---@module 'render-markdown'
     ---@type render.md.UserConfig
     opts = {},
@@ -1208,6 +1122,20 @@ require('lazy').setup({
           -- To jump back, press <C-t>.
           vim.keymap.set('n', 'grd', builtin.lsp_definitions, { buffer = buf, desc = '[G]oto [D]efinition' })
 
+          vim.keymap.set('n', 'grv', function()
+            vim.cmd 'vsplit'
+            vim.lsp.buf.definition()
+          end, {
+            desc = '[G]oto definition in [V]ertical split',
+          })
+
+          vim.keymap.set('n', 'grs', function()
+            vim.cmd 'split'
+            vim.lsp.buf.definition()
+          end, {
+            desc = '[G]oto definition in horizontal [S]plit',
+          })
+
           -- Fuzzy find all the symbols in your current document.
           -- Symbols are things like variables, functions, types, etc.
           vim.keymap.set('n', 'gO', builtin.lsp_document_symbols, { buffer = buf, desc = 'Open Document Symbols' })
@@ -1222,30 +1150,6 @@ require('lazy').setup({
           vim.keymap.set('n', 'grt', builtin.lsp_type_definitions, { buffer = buf, desc = '[G]oto [T]ype Definition' })
         end,
       })
-
-      -- Custom saving
-      vim.keymap.set('n', '<leader>w', '<cmd>update<CR>', { desc = '[W]rite' })
-      vim.keymap.set('n', '<leader>W', '<cmd>wall<CR>', { desc = 'Write [A]ll' })
-      vim.keymap.set('n', '<leader>x', '<cmd>x<CR>', { desc = 'Save and E[x]it' })
-      vim.keymap.set('n', '<leader>Q', '<cmd>qa<CR>', { desc = '[Q]uit all' })
-      -- vim.keymap.set('n', '<leader>e', '<cmd>NvimTreeToggle<CR>', { desc = '[E]xplorer Toggle' }) -- https://github.com/nvim-tree/nvim-tree.lua
-      vim.keymap.set('n', '<leader>e', function()
-        local oil = require 'oil'
-        local bufname = vim.api.nvim_buf_get_name(0)
-
-        if bufname:match '^oil://' then
-          vim.cmd 'bd'
-        else
-          oil.open()
-        end
-      end, { desc = 'Explorer toggle' })
-      vim.keymap.set('n', '<leader>E', function()
-        require('oil').toggle_float()
-      end, { desc = 'Explorer (toggle float)' })
-      vim.keymap.set('n', '<leader>a', 'ggVG', { desc = '[A]ll: select whole buffer' })
-      vim.keymap.set('n', '<leader>Y', ':%y+<CR>', { desc = 'Yank whole buffer to clipboard' })
-      vim.keymap.set('n', '<C-d>', '<C-d>zz')
-      vim.keymap.set('n', '<C-u>', '<C-u>zz')
 
       -- Override default behavior and theme when searching
       vim.keymap.set('n', '<leader>/', function()
@@ -1290,9 +1194,6 @@ require('lazy').setup({
       -- Maps LSP server names between nvim-lspconfig and Mason package names.
       'mason-org/mason-lspconfig.nvim',
       'WhoIsSethDaniel/mason-tool-installer.nvim',
-
-      -- Useful status updates for LSP.
-      { 'j-hui/fidget.nvim', opts = {} },
     },
     config = function()
       -- Brief aside: **What is LSP?**
@@ -1325,7 +1226,7 @@ require('lazy').setup({
       --    an lsp (for example, opening `main.rs` is associated with `rust_analyzer`) this
       --    function will be executed to configure the current buffer
       vim.api.nvim_create_autocmd('LspAttach', {
-        group = vim.api.nvim_create_augroup('kickstart-lsp-attach', { clear = true }),
+        group = vim.api.nvim_create_augroup('lsp-attach', { clear = true }),
         callback = function(event)
           -- NOTE: Remember that Lua is a real programming language, and as such it is possible
           -- to define small helper and utility functions so you don't have to repeat yourself.
@@ -1358,7 +1259,7 @@ require('lazy').setup({
           -- When you move your cursor, the highlights will be cleared (the second autocommand).
           local client = vim.lsp.get_client_by_id(event.data.client_id)
           if client and client:supports_method('textDocument/documentHighlight', event.buf) then
-            local highlight_augroup = vim.api.nvim_create_augroup('kickstart-lsp-highlight', { clear = false })
+            local highlight_augroup = vim.api.nvim_create_augroup('lsp-highlight', { clear = false })
             vim.api.nvim_create_autocmd({ 'CursorHold', 'CursorHoldI' }, {
               buffer = event.buf,
               group = highlight_augroup,
@@ -1372,10 +1273,10 @@ require('lazy').setup({
             })
 
             vim.api.nvim_create_autocmd('LspDetach', {
-              group = vim.api.nvim_create_augroup('kickstart-lsp-detach', { clear = true }),
+              group = vim.api.nvim_create_augroup('lsp-detach', { clear = true }),
               callback = function(event2)
                 vim.lsp.buf.clear_references()
-                vim.api.nvim_clear_autocmds { group = 'kickstart-lsp-highlight', buffer = event2.buf }
+                vim.api.nvim_clear_autocmds { group = 'lsp-highlight', buffer = event2.buf }
               end,
             })
           end
@@ -1385,7 +1286,7 @@ require('lazy').setup({
           --
           -- This may be unwanted, since they displace some of your code
           if client and client:supports_method('textDocument/inlayHint', event.buf) then
-            vim.lsp.inlay_hint.enable(true, { bufnr = event.buf })
+            vim.lsp.inlay_hint.enable(false, { bufnr = event.buf })
 
             map('<leader>th', function()
               vim.lsp.inlay_hint.enable(not vim.lsp.inlay_hint.is_enabled { bufnr = event.buf })
@@ -1638,100 +1539,27 @@ require('lazy').setup({
   },
 
   {
-    'fcoury/termy.nvim',
-    lazy = false,
+    'savq/melange-nvim',
     priority = 1000,
     config = function()
-      vim.cmd.colorscheme 'termy-dark'
+      vim.cmd.colorscheme 'melange'
+    end,
+  },
 
-      -- Hide borders for Telescope
-      vim.api.nvim_set_hl(0, 'TelescopeBorder', { bg = 'none', fg = 'none' })
-      vim.api.nvim_set_hl(0, 'TelescopeNormal', { bg = 'none' })
-      vim.api.nvim_set_hl(0, 'TelescopePromptBorder', { bg = 'none', fg = 'none' })
-      vim.api.nvim_set_hl(0, 'TelescopePromptNormal', { bg = 'none' })
-      vim.api.nvim_set_hl(0, 'TelescopePromptTitle', { bg = 'none', fg = 'none' })
-      vim.api.nvim_set_hl(0, 'TelescopePreviewTitle', { bg = 'none', fg = 'none' })
-      vim.api.nvim_set_hl(0, 'TelescopeResultsTitle', { bg = 'none', fg = 'none' })
-
-      -- Dim Neovim when tmux pane loses focus (NO transparency, NO effect outside tmux)
-      -- If you encounter any styling issues, consider removing the following block
-      if vim.env.TMUX and vim.env.TMUX ~= '' then
-        local inactive_bg = '#212121'
-
-        -- groups you want to "follow" the pane background
-        local groups = { 'Normal', 'NormalNC', 'EndOfBuffer', 'SignColumn', 'NormalFloat', 'FloatBorder' }
-
-        local saved = nil
-
-        local function snapshot()
-          saved = {}
-          for _, name in ipairs(groups) do
-            -- link=false gives real values, not linked group name
-            saved[name] = vim.api.nvim_get_hl(0, { name = name, link = false })
-          end
-        end
-
-        local function ensure_saved()
-          if not saved then
-            snapshot()
-          end
-          return saved
-        end
-
-        local function apply_inactive()
-          local palette = ensure_saved()
-          if not palette then
-            return
+  {
+    'cormacrelf/dark-notify',
+    config = function()
+      require('dark_notify').run {
+        onchange = function(mode)
+          if mode == 'dark' then
+            vim.o.background = 'dark'
+          else
+            vim.o.background = 'light'
           end
 
-          for _, name in ipairs(groups) do
-            local hl = vim.tbl_deep_extend('force', {}, palette[name] or {})
-            hl.bg = inactive_bg
-            vim.api.nvim_set_hl(0, name, hl)
-          end
-        end
-
-        local function restore_active()
-          local palette = ensure_saved()
-          if not palette then
-            return
-          end
-
-          for _, name in ipairs(groups) do
-            vim.api.nvim_set_hl(0, name, palette[name] or {})
-          end
-        end
-
-        local grp = vim.api.nvim_create_augroup('TmuxPaneDimStable', { clear = true })
-
-        -- when nvim starts, assume active and snapshot current theme
-        vim.api.nvim_create_autocmd('VimEnter', {
-          group = grp,
-          callback = function()
-            snapshot()
-            restore_active()
-          end,
-        })
-
-        vim.api.nvim_create_autocmd('FocusLost', {
-          group = grp,
-          callback = apply_inactive,
-        })
-
-        vim.api.nvim_create_autocmd('FocusGained', {
-          group = grp,
-          callback = restore_active,
-        })
-
-        -- if you change colorscheme, refresh snapshot (so restore goes back to the NEW theme)
-        vim.api.nvim_create_autocmd('ColorScheme', {
-          group = grp,
-          callback = function()
-            snapshot()
-            restore_active()
-          end,
-        })
-      end
+          vim.cmd.colorscheme 'melange'
+        end,
+      }
     end,
   },
 
@@ -1764,21 +1592,6 @@ require('lazy').setup({
       -- - sr)'  - [S]urround [R]eplace [)] [']
       require('mini.surround').setup()
       require('mini.pairs').setup() -- automatic parentheses
-
-      -- Simple and easy statusline.
-      --  You could remove this setup call if you don't like it,
-      --  and try some other statusline plugin
-      local statusline = require 'mini.statusline'
-      -- set use_icons to true if you have a Nerd Font
-      statusline.setup { use_icons = vim.g.have_nerd_font }
-
-      -- You can configure sections in the statusline by overriding their
-      -- default behavior. For example, here we set the section for
-      -- cursor location to LINE:COLUMN
-      ---@diagnostic disable-next-line: duplicate-set-field
-      statusline.section_location = function()
-        return '%2l:%-2v'
-      end
 
       -- ... and there is more!
       --  Check out: https://github.com/nvim-mini/mini.nvim

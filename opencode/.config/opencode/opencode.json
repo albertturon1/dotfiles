@@ -9,5 +9,5 @@
       "enabled": true
     }
   }, 
-  "plugin": ["opencode-cmux"]
+  "plugin": ["@plannotator/opencode@latest"]
 }

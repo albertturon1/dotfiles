@@ -3,9 +3,9 @@ gui:
   border: single 
   nerdFontsVersion: 2
   showNumstatInFilesView: true
-
+  sidePanelWidth: 0.2
+ 
 git:
   pagers:
     - colorArg: always
-      pager: delta --dark --paging=never --syntax-theme Dracula --side-by-side
-
+      pager: ~/.config/lazygit/delta-pager.sh
