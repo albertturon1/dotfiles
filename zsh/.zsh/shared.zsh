@@ -8,8 +8,9 @@ if [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
 fi
 
 alias lg="lazygit"
-alias nvr='nvim -c "DiffviewOpen"'
 alias nv='nvim .'
+alias oc='opencode'
+alias ocp='opencode --port'
 
 # Editor
 export EDITOR=nvim

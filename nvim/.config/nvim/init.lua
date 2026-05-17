@@ -800,15 +800,13 @@ require('lazy').setup({
 
   {
     'nickjvandyke/opencode.nvim',
-    version = '*', -- Latest stable release
+    version = '*',
     dependencies = {
       {
-        -- `snacks.nvim` integration for `ask()`/`select()` UI
-        ---@module "snacks" <- Loads `snacks.nvim` types for configuration intellisense
         'folke/snacks.nvim',
         opts = {
-          input = {}, -- Enhances `ask()`
-          picker = { -- Enhances `select()`
+          input = {},
+          picker = {
             actions = {
               opencode_send = function(...)
                 return require('opencode').snacks_picker_send(...)
@@ -826,59 +824,43 @@ require('lazy').setup({
       },
     },
     config = function()
-      ---@type opencode.Opts
-      vim.g.opencode_opts = {
-        -- Your configuration, if any; goto definition on the type or field for details
-      }
+      vim.o.autoread = true
+      vim.g.opencode_opts = {}
 
-      -- Keymaps (using <leader>o prefix to avoid conflicts with <C-a> increment and <C-x> decrement)
+      local oc = require 'opencode'
+
       vim.keymap.set({ 'n', 'x' }, '<leader>oa', function()
-        require('opencode').ask('@this: ', { submit = true })
-      end, { desc = '[O]pencode [A]sk' })
+        oc.ask('@this: ', { submit = true })
+      end, { desc = 'Ask' })
 
-      vim.keymap.set({ 'n', 'x' }, '<leader>ox', function()
-        require('opencode').select()
-      end, { desc = '[O]pencode Select' })
-
-      vim.keymap.set({ 'n', 't' }, '<leader>ot', function()
-        require('opencode').toggle()
-      end, { desc = '[O]pencode [T]oggle' })
-
-      vim.keymap.set('n', '<leader>os', function()
-        require('opencode').command 'prompt.submit'
-      end, { desc = '[O]pencode [S]ubmit' })
-
-      vim.keymap.set('n', '<leader>oc', function()
-        require('opencode').command 'prompt.clear'
-      end, { desc = '[O]pencode [C]lear' })
-
-      vim.keymap.set({ 'n', 'x' }, 'go', function()
-        return require('opencode').operator '@this '
-      end, { desc = 'Add range to opencode', expr = true })
-      vim.keymap.set('n', 'goo', function()
-        return require('opencode').operator '@this ' .. '_'
-      end, { desc = 'Add line to opencode', expr = true })
-
-      -- Scrolling
-      vim.keymap.set('n', '<S-C-u>', function()
-        require('opencode').command 'session.half.page.up'
-      end, { desc = 'Scroll opencode up' })
-      vim.keymap.set('n', '<S-C-d>', function()
-        require('opencode').command 'session.half.page.down'
-      end, { desc = 'Scroll opencode down' })
-
-      -- Event handling for opencode events
-      vim.api.nvim_create_autocmd('User', {
-        pattern = 'OpencodeEvent:*',
-        callback = function(args)
-          ---@type opencode.server.Event
-          local event = args.data.event
-          -- vim.notify(vim.inspect(event)) -- Uncomment to debug events
-          if event.type == 'session.idle' then
-            vim.notify('[opencode] Finished responding', vim.log.levels.INFO)
+      vim.keymap.set({ 'n', 'x' }, '<leader>on', function()
+        vim.ui.input({ prompt = 'Note: ' }, function(input)
+          if input and input ~= '' then
+            oc.prompt(input, { submit = true })
           end
-        end,
-      })
+        end)
+      end, { desc = 'Note' })
+      vim.keymap.set({ 'n', 'x' }, '<leader>ox', function()
+        oc.select()
+      end, { desc = 'Select' })
+      vim.keymap.set('n', '<leader>os', function()
+        oc.command 'prompt.submit'
+      end, { desc = 'Submit' })
+      vim.keymap.set('n', '<leader>oc', function()
+        oc.command 'prompt.clear'
+      end, { desc = 'Clear' })
+      vim.keymap.set({ 'n', 'x' }, 'go', function()
+        return oc.operator '@this '
+      end, { desc = 'Operator range', expr = true })
+      vim.keymap.set('n', 'goo', function()
+        return oc.operator '@this ' .. '_'
+      end, { desc = 'Operator line', expr = true })
+      vim.keymap.set('n', '<S-C-u>', function()
+        oc.command 'session.half.page.up'
+      end, { desc = 'Scroll up' })
+      vim.keymap.set('n', '<S-C-d>', function()
+        oc.command 'session.half.page.down'
+      end, { desc = 'Scroll down' })
     end,
   },
 

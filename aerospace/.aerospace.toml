@@ -172,11 +172,6 @@ backspace = ['close-all-windows-but-current', 'mode main']
 # alt-shift-k = ['join-with up', 'mode main']
 # alt-shift-l = ['join-with right', 'mode main']
 
-# C workspace
-[[on-window-detected]]
-if.app-id = 'com.microsoft.VSCode'
-run = 'move-node-to-workspace D'
-
 [[on-window-detected]]
 if.app-id = 'com.google.Chrome'
 run = 'move-node-to-workspace D'
@@ -190,10 +185,6 @@ if.app-id = 'net.imput.helium'
 run = 'move-node-to-workspace S'
 
 [[on-window-detected]]
-if.app-id = 'com.brave.Browser'
-run = 'move-node-to-workspace S'
-
-[[on-window-detected]]
 if.app-id = 'com.apple.Notes'
 run = 'move-node-to-workspace F'
 
@@ -203,6 +194,10 @@ run = 'move-node-to-workspace A'
 
 [[on-window-detected]]
 if.app-id = 'com.superset.desktop'
+run = 'move-node-to-workspace A'
+
+[[on-window-detected]]
+if.app-id = 'com.stablyai.orca'
 run = 'move-node-to-workspace A'
 
 [[on-window-detected]]
@@ -225,10 +220,6 @@ if.app-id = 'com.apple.Preview'
 run = 'layout floating'
 
 [[on-window-detected]]
-if.app-id = 'com.bitwarden.desktop'
-run = 'layout floating'
-
-[[on-window-detected]]
 if.app-id = 'com.apple.finder'
 run = 'layout floating'
 
@@ -236,6 +227,3 @@ run = 'layout floating'
 if.app-id = 'com.apple.Notes'
 run = 'layout floating'
 
-[[on-window-detected]]
-if.app-id = 'com.spotify.client'
-run = 'layout floating'
