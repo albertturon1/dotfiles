@@ -1,4 +1,4 @@
-#!/bin/bash
+
 set -e
 
 DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -20,42 +20,6 @@ if ! command -v brew &> /dev/null; then
         fi
         eval "$HOMEBREW_LINE"
     fi
-fi
-
-MODEL_ALIAS="$HOME/.models/zeta-2.gguf"
-MODEL_REPO="bartowski/zed-industries_zeta-2-GGUF:Q8_0"
-
-# create stable models dir
-mkdir -p "$HOME/.models"
-
-# check if model already exists (stable symlink target)
-if [ -f "$MODEL_ALIAS" ]; then
-    echo "Zeta 2 already installed at $MODEL_ALIAS"
-else
-    echo "Zeta 2 not found. Downloading via llama.cpp..."
-
-    # trigger download into HF cache
-    llama-server -hf "$MODEL_REPO" --no-warmup --port 9999 >/dev/null 2>&1 &
-    PID=$!
-
-    # wait a bit so it downloads
-    sleep 5
-
-    # kill server after download init
-    kill $PID 2>/dev/null || true
-
-    # find downloaded GGUF (no hardcoded hash)
-    FOUND_PATH=$(find "$HOME/.cache/huggingface" -name "*zeta-2*Q8_0.gguf" | head -n 1)
-
-    if [ -z "$FOUND_PATH" ]; then
-        echo "❌ Failed to locate downloaded model"
-        exit 1
-    fi
-
-    # create stable symlink
-    ln -sf "$FOUND_PATH" "$MODEL_ALIAS"
-
-    echo "✅ Zeta 2 installed → $MODEL_ALIAS"
 fi
 
 # Install packages from Brewfile (ignore errors for already installed packages)
