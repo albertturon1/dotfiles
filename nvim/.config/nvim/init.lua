@@ -187,9 +187,8 @@ vim.diagnostic.config {
   severity_sort = true,
   float = { border = 'rounded', source = 'if_many' },
   underline = { severity = { min = vim.diagnostic.severity.WARN } },
-  -- Can switch between these as you prefer
-  virtual_text = true, -- Text shows up at the end of the line
-  virtual_lines = false, -- Text shows up underneath the line, with virtual lines
+  virtual_text = false,
+  virtual_lines = true,
   -- Auto open the float, so you can easily read the errors when jumping with `[d` and `]d`
   jump = { float = true },
 }
@@ -441,6 +440,7 @@ vim.keymap.set('n', '<leader>C', reopen_last_closed_buffer, { desc = 'Buffer reo
 vim.keymap.set('t', '<Esc><Esc>', '<C-\\><C-n>', { desc = 'Exit terminal mode' })
 
 -- Custom saving
+vim.keymap.set('n', ';', '<CR>')
 vim.keymap.set('n', '<leader>w', '<cmd>update<CR>', { desc = '[W]rite' })
 vim.keymap.set('n', '<leader>W', '<cmd>wall<CR>', { desc = 'Write [A]ll' })
 vim.keymap.set('n', '<leader>x', '<cmd>x<CR>', { desc = 'Save and E[x]it' })

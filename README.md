@@ -18,11 +18,13 @@ cd ~/dotfiles
 ## What's Included
 
 - **aerospace** - i3-like tiling window manager for macOS
+- **agents** - Global AI coding-agent instructions (`~/.agents/AGENTS.md`, mirrored for Pi at `~/.pi/agent/AGENTS.md`)
 - **skhd** - Hotkey daemon (skhd.zig fork)
 - **nvim** - Neovim configuration (kickstart.nvim based)
 - **zsh** - Shell configuration
 - **lazygit** - Git TUI
 - **opencode** - OpenCode AI assistant config
+- **pi** - Pi coding agent extensions
 - **fff-mcp** - MCP server for file navigation used by OpenCode
 
 ## Post-Installation

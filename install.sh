@@ -35,12 +35,18 @@ fi
 # Stow all packages using --adopt to take over existing files
 echo "Stowing all packages..."
 
-for package in aerospace bin hunk lazygit nvim opencode skhd zsh ignore; do
+for package in aerospace agents bin hunk lazygit nvim opencode pi skhd zsh ignore; do
     if [ -d "$package" ]; then
         echo "Stowing $package..."
-        stow -v --adopt --no-folding -t ~ "$package"
+        stow -v --adopt --no-folding --ignore='node_modules' -t ~ "$package"
     fi
 done
+
+WEB_TOOLS_DIR="$DOTFILES_DIR/pi/.pi/agent/extensions/web-tools"
+if [ -f "$WEB_TOOLS_DIR/package.json" ]; then
+    echo "Installing Pi web-tools runtime dependencies..."
+    npm install --prefix "$WEB_TOOLS_DIR" --omit=dev --no-package-lock --ignore-scripts
+fi
 
 git config --global core.excludesfile ~/.gitignore_global
 
