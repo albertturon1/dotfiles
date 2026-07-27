@@ -22,9 +22,9 @@ if ! command -v brew &> /dev/null; then
     fi
 fi
 
-# Install packages from Brewfile (ignore errors for already installed packages)
-echo "Installing packages from Brewfile..."
-brew bundle --file="$DOTFILES_DIR/Brewfile" --no-upgrade || true
+# Install and upgrade packages declared in Brewfile.
+echo "Installing and upgrading packages from Brewfile..."
+brew bundle --file="$DOTFILES_DIR/Brewfile"
 
 # Check if stow is installed
 if ! command -v stow &> /dev/null; then

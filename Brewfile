@@ -7,7 +7,8 @@ tap "jackielii/tap"
 brew "jackielii/tap/skhd-zig"
 
 # Tools with configs in dotfiles
-# brew "nvim"
+brew "neovim"
+brew "tree-sitter"
 brew "ripgrep"  # Required for Telescope file search (auto-excludes node_modules)
 brew "make"     # Required for telescope-fzf-native build
 brew "lazygit"

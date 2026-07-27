@@ -1,0 +1,5 @@
+require 'custom.settings'
+require 'custom.keymaps'
+require 'custom.autocmds'
+require 'custom.plugins'
+require 'custom.lsp'

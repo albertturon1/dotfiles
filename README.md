@@ -27,6 +27,21 @@ cd ~/dotfiles
 - **pi** - Pi coding agent extensions
 - **fff-mcp** - MCP server for file navigation used by OpenCode
 
+## Updating Neovim Kickstart
+
+`nvim/.config/nvim` is a Git subtree of `nvim-lua/kickstart.nvim`. Keep personal configuration in `nvim/.config/nvim/lua/custom/`; the only intended upstream edits are the `require 'custom'` import and the Nerd Font setting in `init.lua`.
+
+To import a newer Kickstart version:
+
+```bash
+cd ~/dotfiles
+git fetch kickstart
+git subtree pull --prefix=nvim/.config/nvim kickstart master --squash
+stow -R --no-folding -t ~ nvim
+```
+
+After resolving any conflicts, update plugins inside Neovim with `:lua vim.pack.update()` and commit the resulting `nvim-pack-lock.json`.
+
 ## Post-Installation
 
 1. **Accessibility Permissions** - If skhd shows permission warning:

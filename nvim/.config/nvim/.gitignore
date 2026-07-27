@@ -1,3 +1,10 @@
-doc/
-.cache/
-.lazy/
+tags
+test.sh
+.luarc.json
+nvim
+
+spell/
+
+# Track nvim-pack-lock.json in this personal configuration.
+
+.DS_Store
