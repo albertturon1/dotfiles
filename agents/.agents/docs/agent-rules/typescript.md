@@ -26,6 +26,18 @@ Good:
 const result = UserSchema.safeParse(value);
 ```
 
+## Function inputs
+
+When a function needs three or more related input values, accept one named parameter object rather than positional arguments. This keeps call sites legible and makes future changes safe.
+
+```ts
+// Bad
+scheduleMeal(kitchenId, date, slotId, recipeId);
+
+// Good
+scheduleMeal({ kitchenId, date, slotId, recipeId });
+```
+
 ## No exceptions
 
 Do not use `throw` for expected failures.
