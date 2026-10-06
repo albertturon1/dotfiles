@@ -1,10 +1,10 @@
 # Core tools for dotfiles management
 brew "stow"
+brew "node"  # Node/npm for Pi web-tools runtime dependencies
 
-# Window manager and hotkey daemon (config in dotfiles)
 cask "nikitabobko/tap/aerospace"
 tap "jackielii/tap"
-brew "jackielii/tap/skhd-zig"
+cask "jackielii/tap/skhd-zig"
 
 # Tools with configs in dotfiles
 brew "neovim"
@@ -14,5 +14,3 @@ brew "make"     # Required for telescope-fzf-native build
 brew "lazygit"
 brew "git-delta"
 brew "rtk"
-tap "modem-dev/tap"
-brew "modem-dev/tap/hunk"

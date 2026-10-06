@@ -193,11 +193,11 @@ if.app-id = 'dev.zed.Zed'
 run = 'move-node-to-workspace A'
 
 [[on-window-detected]]
-if.app-id = 'com.superset.desktop'
+if.app-id = 'com.stablyai.orca'
 run = 'move-node-to-workspace A'
 
 [[on-window-detected]]
-if.app-id = 'com.stablyai.orca'
+if.app-id = 'com.t3tools.t3code'
 run = 'move-node-to-workspace A'
 
 [[on-window-detected]]
