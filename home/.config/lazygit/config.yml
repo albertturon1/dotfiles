@@ -1,11 +1,10 @@
 gui:
   showCommandLog: false
-  border: single 
+  border: single
   nerdFontsVersion: 2
   showNumstatInFilesView: true
   sidePanelWidth: 0.2
- 
 git:
-  pagers:
+  diffRenderers:
     - colorArg: always
-      pager: ~/.config/lazygit/delta-pager.sh
+      command: ~/.config/lazygit/delta-pager.sh

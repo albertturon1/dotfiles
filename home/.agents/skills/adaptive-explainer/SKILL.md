@@ -7,54 +7,68 @@ description: Turn difficult material into a clear, intuitive explanation when th
 
 Make the subject easier to understand without making it less true.
 
-## Language continuity
+## Establish the reader's need
 
-- Write the skill instructions in English, but mirror the language of the user's current request in the result.
-- An explicit language request overrides mirroring.
-- In mixed-language conversations, follow the language used for the current task. Preserve code, quotations, product names, and established technical terms where translation would reduce precision.
-- When a useful technical term is unfamiliar, explain it on first use. Include the original term in parentheses only when it helps the user recognize it elsewhere.
+Infer the audience, desired depth, and central question from the conversation. When unspecified, assume an intelligent non-specialist and proceed. Ask for clarification only when the answer would substantially change the explanation.
+
+Mirror the language of the current request unless the user explicitly chooses another language. Preserve code, quotations, product names, and technical terms where translation would reduce precision. Explain unfamiliar terms and abbreviations on first use.
 
 ## Choose the medium
 
-Use the lightest medium that makes the important structure easy to see:
+Honor the user's requested format. Otherwise, use the simplest medium that reveals the important structure:
 
-- Use concise prose for definitions, arguments, and short conceptual explanations.
-- Add a diagram for processes, relationships, hierarchies, feedback loops, timelines, or systems with several interacting parts.
-- Create an explanatory image when appearance, geometry, spatial arrangement, or a visual analogy carries information that prose or a diagram would lose.
-- Build an interactive explainer when changing parameters, comparing states, stepping through a process, or manipulating a model would materially improve understanding and the request supports creating an artifact.
+- **Prose:** definitions, arguments, and short conceptual explanations.
+- **Diagrams:** processes, relationships, hierarchies, feedback loops, timelines, and interacting components.
+- **Explanatory images:** appearance, geometry, spatial arrangements, or visual analogies that carry essential information.
+- **Interactive webpages:** ideas that become clearer when the reader changes parameters, compares states, steps through a process, or manipulates a model.
 
-Combine media when each one carries different explanatory work. Do not turn a simple question into a large artifact merely because richer media are possible.
+Combine media when each contributes something useful to the explanation. Scale the artifact to the question.
 
-When choosing a diagram, explanatory image, or interactive webpage, read [references/visual-media.md](references/visual-media.md) before creating the artifact.
+Before creating a diagram, explanatory image, or interactive webpage, read [references/visual-media.md](references/visual-media.md) for formats, tool selection, fallbacks, and presentation checks.
 
-## Explain
+## Build the explanation
 
-Infer the audience and desired depth from the conversation. If they are unclear, assume an intelligent non-specialist and proceed. Ask a question only when the missing answer would substantially change the result.
+Lead with the central idea or practical answer. Introduce the components in the order the reader needs them.
 
-Start with the central idea or practical answer. Then build the user's mental model with only the components that help:
+Choose the supporting elements that address the reader's question: a concrete example, an analogy, the mechanism, a diagram, practical consequences, or a boundary that prevents misunderstanding. Let the subject determine the structure.
 
-- a concrete analogy or example;
-- the mechanism or sequence;
-- a small diagram;
-- why the idea matters;
-- a common misconception or important boundary;
-- a compact recap.
+Match the reader's sophistication. Preserve uncertainty, exceptions, and distinctions that affect the conclusion. When using an analogy, explain where it stops matching the actual mechanism.
 
-Use controlled-language principles at approximately 80% of ASD-STE100 strictness: short sentences, one main idea per sentence, active voice, concrete verbs, stable terminology, and explicit references. Apply these principles naturally in every output language. Prefer readability over literal compliance with an English-only rule.
+## Write clearly
 
-Match the user's sophistication. Preserve necessary nuance, uncertainty, exceptions, and causal boundaries. Label analogies as analogies when they stop matching the real mechanism.
+Use a relaxed controlled-language style inspired by ASD-STE100. Treat “80% of the way to ASD-STE100” as a stylistic cue, not a compliance score. The following rules are the operative instructions:
 
-## Artifact behavior
+- Prefer short sentences with one main idea.
+- Use active voice and concrete verbs where they make the meaning clearer.
+- Use the same term for the same concept throughout.
+- Make the referent of pronouns such as “it” and “this” clear.
+- Explain necessary jargon; replace unnecessary jargon with familiar words.
+- Keep sentences naturally connected. Use a longer sentence when it expresses a relationship more clearly than several fragments.
 
-When the user requests a diagram, image, webpage, or simulation, create the artifact when the environment supports it. Select tools by capability rather than by a product-specific skill name. Follow the portable formats and fallbacks in [references/visual-media.md](references/visual-media.md). Make interactive explainers usable without requiring the user to read their source code.
+Apply these principles in the reader's language. Prioritize readable, precise explanations over literal compliance with an English-language specification.
+
+## Create and verify artifacts
+
+When the user requests an artifact, create it when the environment supports it. Select tools by capability and follow the formats and fallbacks in the visual-media reference. Make the result usable without requiring the reader to inspect its source code.
+
+Check explanatory correctness as well as presentation:
+
+- Diagram labels, arrows, and sequences must match the mechanism being explained.
+- Charts must represent values, units, and scales consistently.
+- Interactive controls and animations must produce states consistent with the stated model.
+- Check a representative case and relevant boundary cases against a known result or an independent calculation.
+- Make assumptions, illustrative values, and consequential simplifications visible.
+- Distinguish conceptual demonstrations from empirically validated models.
+
+If a check cannot be completed, state the specific limitation. Adjust unsupported precision or claims accordingly.
 
 ## Completion check
 
-Before finishing, verify that the result lets the intended reader answer:
+Use these questions internally, rather than as a required response outline:
 
-1. What is it?
-2. How or why does it work?
-3. What is one concrete example?
-4. What limitation or distinction prevents the most likely misunderstanding?
+1. Does the explanation answer the reader's central question?
+2. Can the reader follow the relevant mechanism or reasoning?
+3. Would a concrete example resolve any remaining abstraction?
+4. Is the most likely consequential misunderstanding addressed?
 
-Omit any item that does not apply. Stop when the explanation is complete; do not pad it with adjacent facts.
+Include only what the task needs. Finish when the explanation is sufficient; add a recap only when it helps the reader retain the idea.

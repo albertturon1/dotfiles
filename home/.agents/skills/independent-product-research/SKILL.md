@@ -127,3 +127,19 @@ Match the length of the report to the purchase's cost, risk, and complexity. Inc
 9. direct links next to the claims they support.
 
 When useful, give price thresholds that would change the choice, such as choosing one candidate below a stated price and another above it. State what new evidence or market change would alter the conclusion.
+
+## Prefer independent rankings and expert evaluation
+
+Actively search for independent comparative rankings, expert reviews, and credible subject-matter recommendations before building the shortlist.
+
+Prefer sources that:
+- disclose their methodology and relevant expertise;
+- compare competing products using consistent criteria;
+- perform their own testing, analysis, or expert assessment;
+- separate product quality from price, popularity, customer ratings, sales rank, or affiliate incentives.
+
+Do not treat retailer rankings, marketplace lists, SEO roundups without clear methodology, or manufacturer-created comparisons as independent quality evidence. They may still be used for market facts such as price and availability.
+
+If no credible independent ranking or comparative review exists, do not manufacture a consensus. Fall back to the strongest available evidence: independent single-product tests, professional or institutional guidance, regulatory or standards-based evidence, first-party technical documentation, and recurring owner-reported risk signals.
+
+Lack of independent rankings is an evidence gap, not evidence that a product is poor. Lower confidence accordingly, and if the available evidence cannot reliably distinguish candidates, say so rather than forcing a precise ranking.

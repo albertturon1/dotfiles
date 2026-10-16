@@ -1,0 +1,35 @@
+// Zed keymap
+//
+// For information on binding keys, see the Zed
+// documentation: https://zed.dev/docs/key-bindings
+//
+// To see the default key bindings run `zed: open default keymap`
+// from the command palette.
+[
+  {
+    "bindings": {
+      "cmd-e": "project_panel::ToggleFocus",
+      "cmd-g": "git_panel::ToggleFocus"
+    }
+  },
+  {
+    "context": "(Editor && mode == full)",
+    "bindings": {
+      "alt-cmd-e": null,
+      "alt-q": "editor::ToggleSoftWrap"
+    }
+  },
+  {
+    "context": "Editor",
+    "bindings": {
+      "cmd-u": "workspace::ActivatePaneDown",
+      "ctrl-cmd-e": null
+    }
+  },
+  {
+    "context": "Dock",
+    "bindings": {
+      "cmd-u": "workspace::FocusCenterPane"
+    }
+  }
+]

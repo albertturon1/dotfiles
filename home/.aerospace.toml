@@ -12,7 +12,7 @@ after-login-command = []
 # You can use it to add commands that run after AeroSpace startup.
 # 'after-startup-command' is run after 'after-login-command'
 # Available commands : https://nikitabobko.github.io/AeroSpace/commands
-after-startup-command = ["workspace S"]
+after-startup-command = ["workspace W"]
 
 # Start AeroSpace at login
 start-at-login = true
@@ -122,8 +122,11 @@ outer.left = 0
 # alt-shift-minus = 'resize smart -50'
 # alt-shift-equal = 'resize smart +50'
 
-# Workspace switching - handled by skhd: lalt - a/s/d/f/1/2/3
+# Workspace switching - handled by skhd: lalt - q/w/e/a/s/d/f/1/2/3
 # See: https://nikitabobko.github.io/AeroSpace/commands#workspace
+# alt-q = 'workspace Q'
+# alt-w = 'workspace W'
+# alt-e = 'workspace E'
 # alt-a = 'workspace A'
 # alt-s = 'workspace S'
 # alt-d = 'workspace D'
@@ -132,8 +135,11 @@ outer.left = 0
 # alt-2 = 'workspace 2'
 # alt-3 = 'workspace 3'
 
-# Move node to workspace - handled by skhd: lalt + shift - a/s/d/f/1/2/3
+# Move node to workspace - handled by skhd: lalt + shift - q/w/e/a/s/d/f/1/2/3
 # See: https://nikitabobko.github.io/AeroSpace/commands#move-node-to-workspace
+# alt-shift-q = 'move-node-to-workspace Q'
+# alt-shift-w = 'move-node-to-workspace W'
+# alt-shift-e = 'move-node-to-workspace E'
 # alt-shift-a = 'move-node-to-workspace A'
 # alt-shift-s = 'move-node-to-workspace S'
 # alt-shift-d = 'move-node-to-workspace D'
@@ -174,27 +180,19 @@ backspace = ['close-all-windows-but-current', 'mode main']
 
 [[on-window-detected]]
 if.app-id = 'com.google.Chrome'
-run = 'move-node-to-workspace D'
-
-[[on-window-detected]]
-if.app-id = 'com.apple.Safari'
-run = 'move-node-to-workspace S'
+run = 'move-node-to-workspace Q'
 
 [[on-window-detected]]
 if.app-id = 'net.imput.helium'
-run = 'move-node-to-workspace S'
+run = 'move-node-to-workspace W'
 
 [[on-window-detected]]
 if.app-id = 'com.apple.Notes'
-run = 'move-node-to-workspace F'
+run = ['move-node-to-workspace E', 'layout floating']
 
 [[on-window-detected]]
 if.app-id = 'dev.zed.Zed'
-run = 'move-node-to-workspace A'
-
-[[on-window-detected]]
-if.app-id = 'com.stablyai.orca'
-run = 'move-node-to-workspace A'
+run = 'move-node-to-workspace S'
 
 [[on-window-detected]]
 if.app-id = 'com.t3tools.t3code'
@@ -202,6 +200,10 @@ run = 'move-node-to-workspace A'
 
 [[on-window-detected]]
 if.app-id = 'com.mitchellh.ghostty'
+run = 'move-node-to-workspace F'
+
+[[on-window-detected]]
+if.app-id = 'com.openai.codex'
 run = 'move-node-to-workspace D'
 
 # Slack
@@ -221,9 +223,5 @@ run = 'layout floating'
 
 [[on-window-detected]]
 if.app-id = 'com.apple.finder'
-run = 'layout floating'
-
-[[on-window-detected]]
-if.app-id = 'com.apple.Notes'
 run = 'layout floating'
 
