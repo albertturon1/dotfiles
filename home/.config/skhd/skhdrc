@@ -11,10 +11,11 @@ lalt - 0x2F : aerospace layout tiles horizontal vertical
 lalt - 0x2C : aerospace layout accordion horizontal vertical
 
 # Focus movement
-lalt - h : aerospace focus left
+lalt - 0x32 : aerospace focus --wrap-around dfs-next
+lalt - h : aerospace focus --wrap-around left
 lalt - j : aerospace focus down
 lalt - k : aerospace focus up
-lalt - l : aerospace focus right
+lalt - l : aerospace focus --wrap-around right
 
 # Move windows
 lalt + shift - h : aerospace move left
@@ -52,7 +53,6 @@ lalt + shift - 3 : aerospace move-node-to-workspace 3
 
 # Workspace navigation
 lalt - tab : aerospace workspace-back-and-forth
-lalt + shift - tab : aerospace move-workspace-to-monitor --wrap-around next
 
 # Service mode activation
 lalt + shift - 0x29 : aerospace mode service

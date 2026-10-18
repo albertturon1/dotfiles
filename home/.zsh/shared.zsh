@@ -12,6 +12,37 @@ alias nv='nvim .'
 alias oc='opencode'
 alias ocp='opencode --port'
 
+# Stop the process listening on a TCP port (for example: killport 3000).
+killport() {
+  if (( $# != 1 )) || [[ ! $1 =~ '^[0-9]+$' ]] || (( $1 < 1 || $1 > 65535 )); then
+    echo "Usage: killport <port (1-65535)>" >&2
+    return 2
+  fi
+
+  local port="$1"
+  local pids
+  local lsof_status
+  pids=(${(f)$(lsof -ti "tcp:$port" -sTCP:LISTEN 2>/dev/null)})
+  lsof_status=$?
+
+  if (( ${#pids[@]} == 0 )); then
+    if (( lsof_status != 0 )); then
+      echo "killport: failed to inspect port $port (lsof exited with status $lsof_status)" >&2
+    else
+      echo "killport: no process is listening on port $port" >&2
+    fi
+    return 1
+  fi
+
+  if kill $pids 2>/dev/null; then
+    echo "Stopped process(es) on port $port."
+  else
+    local kill_status=$?
+    echo "killport: failed to stop process(es) on port $port (kill exited with status $kill_status)" >&2
+    return "$kill_status"
+  fi
+}
+
 # Editor
 export EDITOR=nvim
 
