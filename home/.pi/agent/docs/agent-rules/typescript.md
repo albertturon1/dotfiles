@@ -1,1 +1,0 @@
-../../../../.agents/docs/agent-rules/typescript.md

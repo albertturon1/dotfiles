@@ -7,22 +7,32 @@
 // custom settings, run `zed: open default settings` from the
 // command palette (cmd-shift-p / ctrl-shift-p)
 {
+  "agent": {
+    "threads_sidebar": {
+      "auto_open": false,
+      "default_width": 0.0,
+      "position": "right",
+    },
+    "favorite_models": [],
+    "model_parameters": [],
+  },
+  "disable_ai": true,
   "lsp_document_colors": "inlay",
   "cli_default_open_behavior": "existing_window",
   "proxy": "",
   "project_panel": {
-    "dock": "right"
+    "dock": "right",
   },
   "outline_panel": {
-    "dock": "right"
+    "dock": "right",
   },
   "collaboration_panel": {
-    "dock": "right"
+    "dock": "right",
   },
   "git_panel": {
     "group_by": "staging",
     "tree_view": true,
-    "dock": "right"
+    "dock": "right",
   },
   "icon_theme": "VSCode Icons for Zed (Dark Angular)",
   "inlay_hints": {
@@ -38,12 +48,12 @@
       "alt": false,
       "shift": false,
       "platform": false,
-      "function": false
-    }
+      "function": false,
+    },
   },
   "telemetry": {
     "diagnostics": false,
-    "metrics": true
+    "metrics": true,
   },
   "ui_font_size": 14,
   "buffer_font_size": 14,
@@ -51,14 +61,14 @@
   "theme": {
     "mode": "system",
     "light": "Ayu Light",
-    "dark": "Nordfox - blurred"
+    "dark": "Nordfox - blurred",
   },
   "languages": {
     "JavaScript": {
       "code_actions_on_format": {
-        "source.fixAll.eslint": true
+        "source.fixAll.eslint": true,
       },
-      "formatter": []
-    }
-  }
+      "formatter": [],
+    },
+  },
 }
