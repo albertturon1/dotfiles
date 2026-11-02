@@ -1,6 +1,14 @@
 # Place a copy of this config to ~/.aerospace.toml
 # After that, you can edit ~/.aerospace.toml to your liking
 
+# See: https://nikitabobko.github.io/AeroSpace/guide#config-version
+config-version = 2
+
+# With config-version = 2, persistent-workspaces must be explicit (v1 inferred it from bindings).
+# Without this, empty workspaces (e.g. Q/W) are destroyed and recreated with the default
+# 'tiles' layout, so the h_accordion set in after-startup-command is lost.
+persistent-workspaces = ['1', '2', '3', 'A', 'D', 'E', 'Q', 'S', 'W']
+
 # It's not necessary to copy all keys to your config.
 # If the key is missing in your config, "default-config.toml" will serve as a fallback
 
@@ -203,6 +211,10 @@ run = 'move-node-to-workspace E'
 
 [[on-window-detected]]
 if.app-id = 'com.openai.codex'
+run = 'move-node-to-workspace Q'
+
+[[on-window-detected]]
+if.app-id = 'com.anthropic.claudefordesktop'
 run = 'move-node-to-workspace Q'
 
 # Slack
