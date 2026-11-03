@@ -16,7 +16,7 @@
     "context": "(Editor && mode == full)",
     "bindings": {
       "alt-cmd-e": null,
-      "alt-q": "editor::ToggleSoftWrap"
+      "ctrl-q": "editor::ToggleSoftWrap"
     }
   },
   {
