@@ -7,6 +7,7 @@
 // custom settings, run `zed: open default settings` from the
 // command palette (cmd-shift-p / ctrl-shift-p)
 {
+  "default_open_behavior": "new_window",
   "agent": {
     "threads_sidebar": {
       "auto_open": false,
@@ -18,10 +19,11 @@
   },
   "disable_ai": true,
   "lsp_document_colors": "inlay",
-  "cli_default_open_behavior": "existing_window",
+  "cli_default_open_behavior": "new_window",
   "proxy": "",
   "project_panel": {
     "dock": "right",
+    "starts_open": false,
   },
   "outline_panel": {
     "dock": "right",
@@ -33,6 +35,7 @@
     "group_by": "staging",
     "tree_view": true,
     "dock": "right",
+    "starts_open": true,
   },
   "icon_theme": "VSCode Icons for Zed (Dark Angular)",
   "inlay_hints": {
