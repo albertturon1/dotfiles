@@ -43,6 +43,83 @@ killport() {
   fi
 }
 
+# Rebase the current branch onto the latest base branch (stack-aware).
+# Usage: grefresh [base-branch]
+#   Without an argument the base is the remote's default branch (main/master/...),
+#   resolved from refs/remotes/origin/HEAD.
+#   For stacked PRs pass the parent branch: grefresh feature/parent
+#   Local changes are stashed and restored by git itself (--autostash), including
+#   after a conflict once you run `git rebase --continue` or `git rebase --abort`.
+grefresh() {
+  local remote base base_ref branch
+
+  if (( $# > 1 )) || [[ "${1-}" == -* ]]; then
+    echo "Usage: grefresh [base-branch]" >&2
+    return 2
+  fi
+
+  git rev-parse --git-dir >/dev/null 2>&1 || {
+    echo "grefresh: not inside a git repository" >&2
+    return 1
+  }
+
+  branch=$(git symbolic-ref --short -q HEAD) || {
+    echo "grefresh: detached HEAD, check out a branch first" >&2
+    return 1
+  }
+
+  remote=$(git config --get "branch.$branch.remote") || remote=origin
+  git remote get-url "$remote" >/dev/null 2>&1 || {
+    echo "grefresh: remote '$remote' does not exist" >&2
+    return 1
+  }
+
+  if [[ -n "${1-}" ]]; then
+    base="${1}"
+  else
+    base_ref=$(git symbolic-ref -q "refs/remotes/$remote/HEAD") || {
+      echo "grefresh: cannot determine default branch of $remote; run 'git remote set-head $remote -a' or pass the base branch" >&2
+      return 1
+    }
+    base="${base_ref#refs/remotes/$remote/}"
+  fi
+
+  if [[ "$base" == "$branch" ]]; then
+    echo "grefresh: you are on '$base' itself; pass the parent branch of your stack or run it from a feature branch" >&2
+    return 1
+  fi
+
+  git fetch --prune --quiet "$remote" || {
+    echo "grefresh: fetch from $remote failed" >&2
+    return 1
+  }
+
+  git show-ref --verify --quiet "refs/remotes/$remote/$base" || {
+    echo "grefresh: $remote/$base does not exist" >&2
+    return 1
+  }
+
+  if git merge-base --is-ancestor "refs/remotes/$remote/$base" HEAD; then
+    echo "grefresh: $branch already contains $remote/$base, nothing to do"
+    return 0
+  fi
+
+  # --fork-point uses the reflog of origin/<base> to find where the branch really
+  # forked, so a rewritten (amended/squashed + force-pushed) parent does not
+  # replay its old commits. Falls back to the merge-base when there is no reflog.
+  # --autostash stashes local changes and re-applies them when the rebase finishes
+  # (or is aborted), so no manual stash/pop is needed.
+  if ! git rebase --autostash --fork-point "refs/remotes/$remote/$base"; then
+    echo "grefresh: rebase of $branch onto $remote/$base stopped with conflicts." >&2
+    echo "  fix the files, then: git add <files> && git rebase --continue" >&2
+    echo "  or to undo everything: git rebase --abort" >&2
+    echo "  (your local changes are restored automatically in both cases)" >&2
+    return 1
+  fi
+
+  echo "grefresh: $branch rebased onto $remote/$base"
+}
+
 # Editor
 export EDITOR=nvim
 
