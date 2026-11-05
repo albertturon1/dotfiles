@@ -43,6 +43,36 @@ killport() {
   fi
 }
 
+# Print the global agent rules for pasting into Cursor
+# (Settings > Customize > Rules > User Rules). Cursor documents no file path for them.
+# Usage: agents-cursor-rules   (also copies to the clipboard)
+agents-cursor-rules() {
+  local source="$HOME/.agents/AGENTS.md"
+  [[ -f "$source" ]] || { echo "agents-cursor-rules: $source not found" >&2; return 1; }
+  cat "$source"
+  pbcopy < "$source" && echo "agents-cursor-rules: copied to clipboard" >&2
+}
+
+# Add personal agent rules to the current repo without committing them:
+# a Cursor project rule (.cursor/rules/personal.mdc, alwaysApply) excluded through
+# the repo's info/exclude, which applies to every worktree of the clone.
+# Usage: agents-local-init [rules-file]   (default: ~/.agents/AGENTS.md)
+agents-local-init() {
+  local source="${1:-$HOME/.agents/AGENTS.md}" root exclude
+  [[ -f "$source" ]] || { echo "agents-local-init: $source not found" >&2; return 1; }
+  root="$(git rev-parse --show-toplevel 2>/dev/null)" ||
+    { echo "agents-local-init: not inside a git repository" >&2; return 1; }
+  exclude="$(git -C "$root" rev-parse --path-format=absolute --git-path info/exclude)" || return 1
+  mkdir -p "$root/.cursor/rules" "$(dirname "$exclude")" || return 1
+  {
+    printf -- '---\ndescription: Personal agent rules\nalwaysApply: true\n---\n\n'
+    cat "$source"
+  } > "$root/.cursor/rules/personal.mdc" || return 1
+  grep -qxF '/.cursor/rules/personal.mdc' "$exclude" 2>/dev/null ||
+    printf '/.cursor/rules/personal.mdc\n' >> "$exclude" || return 1
+  echo "Wrote $root/.cursor/rules/personal.mdc (excluded via $exclude)"
+}
+
 # Editor
 export EDITOR=nvim
 
