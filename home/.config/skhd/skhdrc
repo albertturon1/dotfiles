@@ -17,6 +17,9 @@ lalt - j : aerospace focus down
 lalt - k : aerospace focus up
 lalt - l : aerospace focus --wrap-around right
 
+# Focus previous window (reverse of lalt - 0x32)
+lalt + shift - 0x32 : aerospace focus --wrap-around dfs-prev
+
 # Move windows
 lalt + shift - h : aerospace move left
 lalt + shift - j : aerospace move down
