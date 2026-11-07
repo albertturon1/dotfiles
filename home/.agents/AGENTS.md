@@ -30,6 +30,15 @@ Do not commit, push, merge, or change branches unless the user's message asks fo
 - A comment longer than 3 lines signals a too-wordy comment or a too-complex implementation. Simplify the code.
 - Test real components. Mock only a system boundary, and list the behaviors the mock leaves unverified.
 
+## Invariants
+
+- Before reporting a change done, find every invariant the app relies on but does not enforce explicitly (in code, types, or a test). Enforce it or name it in the report.
+
+## No implicit state machines
+
+- When several flags, refs, timers, or nullable fields depend on each other, name each valid combination as a state in one union type, and keep the transitions in one function. Do not spread them across handlers.
+- Before adding a flag that depends on another, write the state table (states as rows, events as columns) and fill every cell.
+
 ## Where rules and memory live
 
 - Project facts live in that project's AGENTS.md or local rules, never in global files or global memory.
