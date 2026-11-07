@@ -3,6 +3,11 @@ set -euo pipefail
 
 DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 WEB_TOOLS_DIR="$DOTFILES_DIR/home/.pi/agent/extensions/web-tools"
+# Pinned so a fresh machine gets a known version; bump deliberately after reading the release notes.
+PLANNOTATOR_VERSION=v0.28.51
+# A remote installer runs only if its bytes match these hashes. Update a hash only after reading the new script.
+PLANNOTATOR_INSTALLER_SHA256=004e897c19b06d9c7c697914a81d74d147a9c7df8035a5252d0a66a2312f72cd
+FFF_INSTALLER_SHA256=510ecb5a5151ded8f08efedfc73898464a8470ed8c256853db31a19216a25546
 COMPLETED=""
 SKIPPED=""
 FAILED=""
@@ -113,24 +118,53 @@ configure_shell_and_git() {
     fi
 }
 
+# Runs a remote installer only when its SHA256 matches. Pinning the script, not just the tool version,
+# means an upstream change stops the install instead of running unreviewed code.
+run_pinned_installer() {
+    local name="$1" url="$2" expected="$3" installer actual
+    shift 3
+    installer="$(mktemp)" || return 1
+    if ! curl -fsSL "$url" -o "$installer"; then
+        rm -f "$installer"
+        echo "Could not download the $name installer" >&2
+        return 1
+    fi
+    actual="$(shasum -a 256 "$installer" | cut -d' ' -f1)"
+    if [[ "$actual" != "$expected" ]]; then
+        rm -f "$installer"
+        echo "$name installer changed (sha256 $actual, expected $expected); review it, then update the pin" >&2
+        return 1
+    fi
+    if ! bash "$installer" "$@"; then
+        rm -f "$installer"
+        return 1
+    fi
+    rm -f "$installer"
+}
+
 install_fff() {
-    local installer
     if command -v fff-mcp >/dev/null 2>&1 || [[ -x "$HOME/.local/bin/fff-mcp" ]]; then
         SKIPPED+=$'\n  - FFF MCP already installed'
         return 0
     fi
-    installer="$(mktemp)" || return 1
-    if ! curl -fsSL https://dmtrkovalenko.dev/install-fff-mcp.sh -o "$installer"; then
-        rm -f "$installer"
-        return 1
-    fi
-    if ! bash "$installer"; then
-        rm -f "$installer"
-        return 1
-    fi
-    rm -f "$installer" || return 1
+    run_pinned_installer fff https://dmtrkovalenko.dev/install-fff-mcp.sh "$FFF_INSTALLER_SHA256" || return 1
     command -v fff-mcp >/dev/null 2>&1 || [[ -x "$HOME/.local/bin/fff-mcp" ]] || return 1
     COMPLETED+=$'\n  - FFF MCP installed'
+}
+
+install_plannotator() {
+    local installed
+    installed="$(plannotator --version 2>/dev/null | awk '{print $2}' || true)"
+    echo "Plannotator installed: ${installed:-none}; pinned: ${PLANNOTATOR_VERSION#v}"
+    if [[ "$installed" == "${PLANNOTATOR_VERSION#v}" ]]; then
+        SKIPPED+=$'\n  - Plannotator already at pinned version'
+        return 0
+    fi
+    # User-invoked skills only; the installer otherwise turns on model invocation for review skills.
+    run_pinned_installer plannotator https://plannotator.ai/install.sh "$PLANNOTATOR_INSTALLER_SHA256" \
+        --version "$PLANNOTATOR_VERSION" --extras --non-interactive --model-invocable none || return 1
+    echo "Plannotator now: $(plannotator --version)"
+    COMPLETED+=$'\n  - Plannotator installed at pinned version'
 }
 
 skhd_is_ready() {
@@ -209,6 +243,7 @@ main() {
     fi
     configure_shell_and_git || { fail 'Shell or Git configuration failed'; return 1; }
     install_fff || fail 'FFF MCP installation failed' || true
+    install_plannotator || fail 'Plannotator installation failed' || true
     start_services
     echo 'Restart your terminal to load shell configuration.'
     [[ -z "$FAILED" ]]
