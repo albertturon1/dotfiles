@@ -15,10 +15,11 @@ Worked cases: [EXAMPLES.md](EXAMPLES.md).
    - **Gain.** Work runs in the background while the conversation continues, or a cheaper model takes mechanical work whose frame is already set.
 
    Do it yourself when the task is small, a design decision is still open, or nothing can check the result. When the user said "deleguj" and one condition fails, name it and ask. Done when all three hold, or you named the failing one.
+
 2. **Role.** Choose one: `implement`, `verify`, `review`, or `research`. The cheap tier takes mechanical, well-specified, checkable work (seed data, mechanical UI edits, test runs, verification). The strong tier takes review and diagnosis. Design decisions stay with the user. Done when the brief can name exactly one role.
 3. **Model.** Resolve in this order:
    1. A model named in the user's prompt wins. Use it without asking about conflicts.
-   2. Otherwise the tier line (`cheap` or `strong`) in `~/.agents/models.md`.
+   2. Otherwise the tier line (`cheap`, `standard` or `strong`) in `~/.agents/models.md`, chosen by the rules in that file. Default to `cheap`.
    3. When both are missing, stop delegating. Tell the user `~/.agents/models.md` lacks the tier, show the line format (`- cheap: providerInstanceId=… model=… effort=…`), and resume once the user fills it or names a model.
 4. **Git behavior.** The user's prompt decides. Default: the delegate makes no commit, merge, push, or branch switch.
 5. **Baseline.** Before dispatch, in the delegate's working directory, record: `git status --porcelain`, `git branch --list`, `git worktree list`, `git tag --list`, `git stash list`, the current commit (`<base>`), and the time. Create an artifact directory outside the repository that is unique to this run (the session scratchpad when the harness provides one, otherwise a new directory under the system temp directory). Done when the baseline and the directory path are saved for the brief and the post-check.
