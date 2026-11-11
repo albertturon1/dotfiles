@@ -14,7 +14,7 @@
   "dictation_hotkey": {
     "keys": [
       {
-        "modifier": "shift",
+        "modifier": "control",
         "side": "any"
       },
       {
@@ -109,7 +109,7 @@
     "hotkey": {
       "keys": [
         {
-          "modifier": "shift",
+          "modifier": "control",
           "side": "any"
         },
         {
