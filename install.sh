@@ -5,9 +5,9 @@ DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 WEB_TOOLS_DIR="$DOTFILES_DIR/home/.pi/agent/extensions/web-tools"
 # Pinned so a fresh machine gets a known version; bump deliberately after reading the release notes.
 PLANNOTATOR_VERSION=v0.28.51
-# A remote installer runs only if its bytes match these hashes. Update a hash only after reading the new script.
-PLANNOTATOR_INSTALLER_SHA256=004e897c19b06d9c7c697914a81d74d147a9c7df8035a5252d0a66a2312f72cd
-FFF_INSTALLER_SHA256=510ecb5a5151ded8f08efedfc73898464a8470ed8c256853db31a19216a25546
+PLANNOTATOR_INSTALLER_URL=https://raw.githubusercontent.com/backnotprop/plannotator/dd204b5108e52017885d0db5da532e209a9e4e1d/scripts/install.sh
+# Remote installers are fetched from a commit URL, so their content cannot change. Move to a newer commit only after reading the new script.
+FFF_INSTALLER_URL=https://raw.githubusercontent.com/dmtrkovalenko/fff.nvim/e3f694a2e4f82bb755418e8d305dcff779c59c27/install-mcp.sh
 COMPLETED=""
 SKIPPED=""
 FAILED=""
@@ -93,7 +93,7 @@ stow_dotfiles() {
 
 install_packages() {
     echo 'Installing missing Brewfile packages...'
-    brew bundle --no-upgrade --file="$DOTFILES_DIR/Brewfile" || return 1
+    HOMEBREW_NO_AUTO_UPDATE=1 brew bundle --no-upgrade --file="$DOTFILES_DIR/Brewfile" || return 1
     check_tools stow skhd aerospace || return 1
     if [[ -f "$WEB_TOOLS_DIR/package.json" ]]; then check_tools node npm || return 1; fi
 }
@@ -118,21 +118,18 @@ configure_shell_and_git() {
     fi
 }
 
-# Runs a remote installer only when its SHA256 matches. Pinning the script, not just the tool version,
-# means an upstream change stops the install instead of running unreviewed code.
+# Runs a remote installer. The URL must name a commit (40 hex characters), never a branch or a website, so a moved target can't change what runs.
 run_pinned_installer() {
-    local name="$1" url="$2" expected="$3" installer actual
-    shift 3
+    local name="$1" url="$2" installer
+    shift 2
+    if [[ ! "$url" =~ /[0-9a-f]{40}/ ]]; then
+        echo "The $name installer URL must point at a commit, not a branch or a website: $url" >&2
+        return 1
+    fi
     installer="$(mktemp)" || return 1
     if ! curl -fsSL "$url" -o "$installer"; then
         rm -f "$installer"
         echo "Could not download the $name installer" >&2
-        return 1
-    fi
-    actual="$(shasum -a 256 "$installer" | cut -d' ' -f1)"
-    if [[ "$actual" != "$expected" ]]; then
-        rm -f "$installer"
-        echo "$name installer changed (sha256 $actual, expected $expected); review it, then update the pin" >&2
         return 1
     fi
     if ! bash "$installer" "$@"; then
@@ -147,7 +144,7 @@ install_fff() {
         SKIPPED+=$'\n  - FFF MCP already installed'
         return 0
     fi
-    run_pinned_installer fff https://dmtrkovalenko.dev/install-fff-mcp.sh "$FFF_INSTALLER_SHA256" || return 1
+    run_pinned_installer fff "$FFF_INSTALLER_URL" || return 1
     command -v fff-mcp >/dev/null 2>&1 || [[ -x "$HOME/.local/bin/fff-mcp" ]] || return 1
     COMPLETED+=$'\n  - FFF MCP installed'
 }
@@ -161,7 +158,7 @@ install_plannotator() {
         return 0
     fi
     # User-invoked skills only; the installer otherwise turns on model invocation for review skills.
-    run_pinned_installer plannotator https://plannotator.ai/install.sh "$PLANNOTATOR_INSTALLER_SHA256" \
+    run_pinned_installer plannotator "$PLANNOTATOR_INSTALLER_URL" \
         --version "$PLANNOTATOR_VERSION" --extras --non-interactive --model-invocable none || return 1
     echo "Plannotator now: $(plannotator --version)"
     COMPLETED+=$'\n  - Plannotator installed at pinned version'
