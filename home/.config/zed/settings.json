@@ -7,6 +7,12 @@
 // custom settings, run `zed: open default settings` from the
 // command palette (cmd-shift-p / ctrl-shift-p)
 {
+  "ui_font_weight": 450.0,
+  "buffer_font_weight": 450.0,
+  "terminal": {
+    "font_weight": 400.0,
+    "font_size": 13.0,
+  },
   "agent": {
     "threads_sidebar": {
       "auto_open": false,
@@ -23,6 +29,9 @@
   "project_panel": {
     "dock": "right",
     "starts_open": false,
+    "hide_root": true,
+    "default_width": 400,
+    "sticky_scroll": false,
   },
   "outline_panel": {
     "dock": "right",
@@ -31,12 +40,13 @@
     "dock": "right",
   },
   "git_panel": {
+    "default_width": 400,
     "group_by": "staging",
     "tree_view": true,
     "dock": "right",
     "starts_open": true,
   },
-  "icon_theme": "VSCode Icons for Zed (Dark Angular)",
+  "icon_theme": "Warm Charmed Icons",
   "inlay_hints": {
     "enabled": true,
     "show_type_hints": false,
@@ -57,13 +67,20 @@
     "diagnostics": false,
     "metrics": true,
   },
-  "ui_font_size": 14,
-  "buffer_font_size": 14,
-  "buffer_font_family": "Menlo",
+  "ui_font_size": 15,
+  "ui_font_family": "Geist Mono",
+  "buffer_font_size": 14.0,
+  "buffer_font_family": "Geist Mono",
   "theme": {
     "mode": "system",
-    "light": "Ayu Light",
-    "dark": "Nordfox - blurred",
+    "light": "Melange Light",
+    "dark": "Aura Soft Dark",
+  },
+  "theme_overrides": {
+    "Aura Soft Dark": {
+      "elevated_surface.background": "#37376BFF",
+      "element.selected": "#990000",
+    },
   },
   "languages": {
     "JavaScript": {
@@ -72,5 +89,34 @@
       },
       "formatter": [],
     },
+  },
+  "title_bar": {
+    "show_onboarding_banner": false,
+    "show_sign_in": false,
+    "show_user_picture": false,
+    "show_user_menu": false,
+  },
+  "tab_bar": {
+    "show": false,
+  },
+"toolbar": {
+    // "quick_actions": false
+  },
+  "gutter": {
+    "min_line_number_digits": 0,
+    "runnables": false,
+  },
+  "indent_guides": {
+    "enabled": false,
+  },
+  "buffer_line_height": {
+    "custom": 1.7,
+  },
+  "cursor_blink": false,
+  "cursor_shape": "hollow",
+  "current_line_highlight": "none",
+  "show_whitespaces": "none",
+  "experimental.theme_overrides": {
+    // "editor.document_highlight.read_background": "#992200",
   },
 }

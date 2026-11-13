@@ -9,27 +9,28 @@
   {
     "bindings": {
       "cmd-e": "project_panel::ToggleFocus",
-      "cmd-g": "git_panel::ToggleFocus"
-    }
+      "cmd-g": "git_panel::ToggleFocus",
+      "cmd-u": "terminal_panel::ToggleFocus",
+    },
   },
   {
     "context": "(Editor && mode == full)",
     "bindings": {
       "alt-cmd-e": null,
-      "ctrl-q": "editor::ToggleSoftWrap"
-    }
+      "ctrl-q": "editor::ToggleSoftWrap",
+    },
   },
   {
     "context": "Editor",
     "bindings": {
-      "cmd-u": "workspace::ActivatePaneDown",
-      "ctrl-cmd-e": null
-    }
+      "cmd-u": "terminal_panel::ToggleFocus",
+      "ctrl-cmd-e": null,
+    },
   },
   {
     "context": "Dock",
     "bindings": {
-      "cmd-u": "workspace::FocusCenterPane"
-    }
-  }
+      "cmd-u": "terminal_panel::ToggleFocus",
+    },
+  },
 ]
