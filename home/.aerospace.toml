@@ -30,8 +30,8 @@ after-startup-command = [
   'workspace S',
 ]
 
-# Start AeroSpace at login
-start-at-login = true
+# Start AeroSpace at login. Off during the rift migration test period (rift replaces it).
+start-at-login = false
 
 # Normalizations. See: https://nikitabobko.github.io/AeroSpace/guide#normalization
 enable-normalization-flatten-containers = true

@@ -18,3 +18,8 @@ brew "rtk"
 # JankyBorders (started by home/.config/aerospace/borders-toggle.sh)
 tap "FelixKratz/formulae"
 brew "FelixKratz/formulae/borders"
+
+# rift window manager (config: home/.config/rift/config.toml)
+tap "acsandmann/tap"
+brew "acsandmann/tap/rift"
+brew "go"  # Builds home/.config/rift/nav, the focus navigation used by the rift keybindings

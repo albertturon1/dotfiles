@@ -94,8 +94,13 @@ stow_dotfiles() {
 install_packages() {
     echo 'Installing missing Brewfile packages...'
     HOMEBREW_NO_AUTO_UPDATE=1 brew bundle --no-upgrade --file="$DOTFILES_DIR/Brewfile" || return 1
-    check_tools stow skhd aerospace || return 1
+    check_tools stow skhd aerospace go || return 1
     if [[ -f "$WEB_TOOLS_DIR/package.json" ]]; then check_tools node npm || return 1; fi
+}
+
+build_rift_tools() {
+    echo 'Building rift navigation and borders handler (home/.config/rift/nav)...'
+    (cd "$DOTFILES_DIR/home/.config/rift/nav" && go build -o nav .)
 }
 
 configure_shell_and_git() {
@@ -222,7 +227,7 @@ main() {
     stow_dotfiles check || { fail 'Dotfile conflicts detected; configuration was not linked'; return 1; }
     COMPLETED+=$'\n  - Dotfiles checked for conflicts'
     if [[ "$mode" == check ]]; then
-        check_tools skhd aerospace || return 1
+        check_tools skhd aerospace go || return 1
         if [[ -f "$WEB_TOOLS_DIR/package.json" ]]; then check_tools node npm || return 1; fi
         HOMEBREW_NO_AUTO_UPDATE=1 brew bundle check --no-upgrade --file="$DOTFILES_DIR/Brewfile" || { fail 'Brewfile dependency check failed; inspect the Homebrew output'; return 1; }
         COMPLETED+=$'\n  - Dependencies checked; no installation performed'
@@ -232,6 +237,8 @@ main() {
     COMPLETED+=$'\n  - Brewfile packages available'
     stow_dotfiles install || { fail 'Could not link dotfiles'; return 1; }
     COMPLETED+=$'\n  - Dotfiles linked'
+    build_rift_tools || { fail 'Could not build rift tools (go build failed)'; return 1; }
+    COMPLETED+=$'\n  - Rift tools built'
     if [[ -f "$WEB_TOOLS_DIR/package.json" ]]; then
         npm install --prefix "$WEB_TOOLS_DIR" --omit=dev --no-package-lock --ignore-scripts || { fail 'Pi web-tools dependency installation failed'; return 1; }
         COMPLETED+=$'\n  - Pi web-tools dependencies installed'

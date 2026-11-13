@@ -1,0 +1,193 @@
+# rift config, migrated from home/.aerospace.toml and home/.config/skhd/skhdrc.
+# Reference: /opt/homebrew/opt/rift/share/rift/rift.default.toml (rift 0.8.2).
+# All shortcuts use AltLeft so the right Option key stays free for Polish characters.
+# Gaps are copied from .aerospace.toml (inner h=8 v=6, outer t/b=2 l/r=3).
+
+[settings]
+# Manage every space from startup. Bundled default is true (spaces start inactive until toggle_space_activated).
+default_disable = false
+focus_follows_mouse = false
+mouse_follows_focus = false
+mouse_hides_on_focus = false
+animate = false
+# Q and W start as accordions (see start-stacks.py for why this is a script, not a workspace rule).
+run_on_start = [
+  "/bin/sh -c '\"$HOME/.config/rift/start-stacks.py\"'",
+  # JankyBorders on or off after any focus change, like borders-toggle.sh did under AeroSpace. nav presets the borders
+  # before its own moves, so this only has to catch the rest (mouse, Cmd+Tab).
+  "/opt/homebrew/bin/rift-cli subscribe cli --event workspace_changed --command /bin/sh --args -c --args 'exec \"$HOME/.config/rift/nav/nav\" borders'",
+  "/opt/homebrew/bin/rift-cli subscribe cli --event windows_changed --command /bin/sh --args -c --args 'exec \"$HOME/.config/rift/nav/nav\" borders'",
+  "/opt/homebrew/bin/rift-cli subscribe cli --event focused_window_changed --command /bin/sh --args -c --args 'exec \"$HOME/.config/rift/nav/nav\" borders'",
+  "/opt/homebrew/bin/rift-cli subscribe cli --event selection_changed --command /bin/sh --args -c --args 'exec \"$HOME/.config/rift/nav/nav\" borders'",
+  "/opt/homebrew/bin/rift-cli subscribe cli --event layout_changed --command /bin/sh --args -c --args 'exec \"$HOME/.config/rift/nav/nav\" borders'",
+  "/opt/homebrew/bin/rift-cli subscribe cli --event stacks_changed --command /bin/sh --args -c --args 'exec \"$HOME/.config/rift/nav/nav\" borders'",
+]
+
+[settings.drag_drop]
+# No mouse window dragging; keyboard only.
+enabled = false
+
+[settings.ui.menu_bar]
+enabled = false
+
+[settings.ui.stack_line]
+enabled = false
+
+[settings.ui.mission_control]
+enabled = false
+
+[settings.layout]
+mode = "traditional"
+
+[settings.layout.traditional]
+equalize_nodes = true
+
+[settings.layout.stack]
+# Matches AeroSpace accordion-padding = 30 (how far each stacked window peeks out).
+stack_offset = 30.0
+default_orientation = "horizontal"
+
+[settings.layout.gaps.outer]
+top = 2
+left = 3
+bottom = 4
+right = 3
+
+[settings.layout.gaps.inner]
+horizontal = 10
+vertical = 6
+
+[virtual_workspaces]
+enabled = true
+mode = "global"
+default_workspace_count = 10
+default_workspace = 8
+auto_assign_windows = true
+preserve_focus_per_workspace = true
+workspace_auto_back_and_forth = true
+workspace_names = ["1", "2", "3", "A", "D", "E", "F", "Q", "S", "W"]
+
+# Accordion root for Q and W is set once per workspace with toggle_stack (AltLeft + Slash).
+# Do not set workspace_rules layout = "stack": it flattens the tree.
+
+[[virtual_workspaces.app_rules]]
+app_id = "com.google.Chrome"
+workspace = "A"
+
+[[virtual_workspaces.app_rules]]
+app_id = "net.imput.helium"
+workspace = "S"
+
+[[virtual_workspaces.app_rules]]
+app_id = "dev.zed.Zed"
+workspace = "W"
+
+[[virtual_workspaces.app_rules]]
+app_id = "com.t3tools.t3code"
+workspace = "Q"
+
+[[virtual_workspaces.app_rules]]
+app_id = "com.openai.codex"
+workspace = "Q"
+
+[[virtual_workspaces.app_rules]]
+app_id = "com.anthropic.claudefordesktop"
+workspace = "Q"
+
+[[virtual_workspaces.app_rules]]
+app_id = "com.mitchellh.ghostty"
+workspace = "E"
+
+[[virtual_workspaces.app_rules]]
+app_id = "com.tinyspeck.slackmacgap"
+workspace = 0
+
+[[virtual_workspaces.app_rules]]
+app_id = "us.zoom.xos"
+workspace = 2
+
+[[virtual_workspaces.app_rules]]
+app_id = "com.apple.Notes"
+workspace = "D"
+floating = true
+
+[[virtual_workspaces.app_rules]]
+app_id = "anomaly.hex"
+workspace = "D"
+floating = true
+
+[[virtual_workspaces.app_rules]]
+app_id = "com.apple.Preview"
+floating = true
+
+[[virtual_workspaces.app_rules]]
+app_id = "com.apple.finder"
+floating = true
+
+[[virtual_workspaces.app_rules]]
+app_id = "com.apple.systempreferences"
+floating = true
+
+[keys]
+# Float or tile only the focused window (AeroSpace: lalt - z).
+"AltLeft + Z" = "toggle_window_floating"
+
+"AltLeft + H" = { exec = ["/bin/sh", "-c", 'exec "$HOME/.config/rift/nav/nav" left'] }
+"AltLeft + J" = { exec = ["/bin/sh", "-c", 'exec "$HOME/.config/rift/nav/nav" down'] }
+"AltLeft + K" = { exec = ["/bin/sh", "-c", 'exec "$HOME/.config/rift/nav/nav" up'] }
+"AltLeft + L" = { exec = ["/bin/sh", "-c", 'exec "$HOME/.config/rift/nav/nav" right'] }
+
+"AltLeft + Shift + H" = { move_node = "left" }
+"AltLeft + Shift + J" = { move_node = "down" }
+"AltLeft + Shift + K" = { move_node = "up" }
+"AltLeft + Shift + L" = { move_node = "right" }
+
+# AeroSpace lalt - 0x2C (Slash) switched the root to accordion; toggle_stack does the same.
+"AltLeft + Slash" = "toggle_stack"
+"AltLeft + Comma" = "toggle_orientation"
+# Joining on Ctrl: Alt+Shift+arrows are word selection in text fields.
+"AltLeft + Ctrl + H" = { exec = ["/opt/homebrew/bin/rift-cli", "execute", "layout", "join-window", "left"] }
+"AltLeft + Ctrl + L" = { exec = ["/opt/homebrew/bin/rift-cli", "execute", "layout", "join-window", "right"] }
+"AltLeft + Ctrl + E" = "unjoin_windows"
+"AltLeft + Space" = "toggle_window_floating"
+"AltLeft + X" = "toggle_fullscreen"
+"AltLeft + Tab" = "switch_to_last_workspace"
+
+# Alt+backtick moves between top-level windows and groups, wrapping; H/J/K/L stay inside a group along its direction.
+"AltLeft + Backquote" = { exec = ["/bin/sh", "-c", 'exec "$HOME/.config/rift/nav/nav" next'] }
+"AltLeft + Shift + Backquote" = { exec = ["/bin/sh", "-c", 'exec "$HOME/.config/rift/nav/nav" prev'] }
+
+"AltLeft + Shift + Equal" = { resize_window_grow = "smart" }
+"AltLeft + Shift + Minus" = { resize_window_shrink = "smart" }
+
+"AltLeft + Shift + Semicolon" = { binding_mode = "service" }
+
+"AltLeft + 1" = { exec = ["/bin/sh", "-c", 'exec "$HOME/.config/rift/nav/nav" workspace 0'] }
+"AltLeft + 2" = { exec = ["/bin/sh", "-c", 'exec "$HOME/.config/rift/nav/nav" workspace 1'] }
+"AltLeft + 3" = { exec = ["/bin/sh", "-c", 'exec "$HOME/.config/rift/nav/nav" workspace 2'] }
+"AltLeft + A" = { exec = ["/bin/sh", "-c", 'exec "$HOME/.config/rift/nav/nav" workspace 3'] }
+"AltLeft + D" = { exec = ["/bin/sh", "-c", 'exec "$HOME/.config/rift/nav/nav" workspace 4'] }
+"AltLeft + E" = { exec = ["/bin/sh", "-c", 'exec "$HOME/.config/rift/nav/nav" workspace 5'] }
+"AltLeft + F" = { exec = ["/bin/sh", "-c", 'exec "$HOME/.config/rift/nav/nav" workspace 6'] }
+"AltLeft + Q" = { exec = ["/bin/sh", "-c", 'exec "$HOME/.config/rift/nav/nav" workspace 7'] }
+"AltLeft + S" = { exec = ["/bin/sh", "-c", 'exec "$HOME/.config/rift/nav/nav" workspace 8'] }
+"AltLeft + W" = { exec = ["/bin/sh", "-c", 'exec "$HOME/.config/rift/nav/nav" workspace 9'] }
+
+"AltLeft + Shift + 1" = { move_window_to_workspace = 0 }
+"AltLeft + Shift + 2" = { move_window_to_workspace = 1 }
+"AltLeft + Shift + 3" = { move_window_to_workspace = 2 }
+"AltLeft + Shift + A" = { move_window_to_workspace = 3 }
+"AltLeft + Shift + D" = { move_window_to_workspace = 4 }
+"AltLeft + Shift + E" = { move_window_to_workspace = 5 }
+"AltLeft + Shift + F" = { move_window_to_workspace = 6 }
+"AltLeft + Shift + Q" = { move_window_to_workspace = 7 }
+"AltLeft + Shift + S" = { move_window_to_workspace = 8 }
+"AltLeft + Shift + W" = { move_window_to_workspace = 9 }
+
+# AeroSpace service mode (lalt + shift - semicolon): esc reloads and returns, r resets layout, f toggles floating.
+# Not mapped: AeroSpace "close-all-windows-but-current" (backspace) and "flatten-workspace-tree" (r).
+# "balance" is the nearest rift command for r.
+[binding_modes.service]
+"Escape" = ["reload_config", { binding_mode = "default" }]
+"R" = ["balance", { binding_mode = "default" }]
+"F" = ["toggle_window_floating", { binding_mode = "default" }]
