@@ -14,3 +14,7 @@ brew "make"     # Required for telescope-fzf-native build
 brew "lazygit"
 brew "git-delta"
 brew "rtk"
+
+# JankyBorders (started by home/.config/aerospace/borders-toggle.sh)
+tap "FelixKratz/formulae"
+brew "FelixKratz/formulae/borders"

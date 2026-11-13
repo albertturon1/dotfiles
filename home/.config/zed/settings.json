@@ -7,11 +7,13 @@
 // custom settings, run `zed: open default settings` from the
 // command palette (cmd-shift-p / ctrl-shift-p)
 {
+  "soft_wrap": "editor_width",
   "ui_font_weight": 450.0,
   "buffer_font_weight": 450.0,
   "terminal": {
+    "font_family": "Geist Mono",
     "font_weight": 400.0,
-    "font_size": 13.0,
+    "font_size": 14.0,
   },
   "agent": {
     "threads_sidebar": {
@@ -67,13 +69,13 @@
     "diagnostics": false,
     "metrics": true,
   },
-  "ui_font_size": 15,
+  "ui_font_size": 14,
   "ui_font_family": "Geist Mono",
   "buffer_font_size": 14.0,
   "buffer_font_family": "Geist Mono",
   "theme": {
     "mode": "system",
-    "light": "Melange Light",
+    "light": "Github Plus Light",
     "dark": "Aura Soft Dark",
   },
   "theme_overrides": {
@@ -99,7 +101,7 @@
   "tab_bar": {
     "show": false,
   },
-"toolbar": {
+  "toolbar": {
     // "quick_actions": false
   },
   "gutter": {

@@ -21,6 +21,10 @@ after-login-command = []
 # 'after-startup-command' is run after 'after-login-command'
 # Available commands : https://nikitabobko.github.io/AeroSpace/commands
 after-startup-command = [
+  # JankyBorders is started and configured by the toggle script,
+  # which also holds the per-machine feature switch (ENABLED).
+  # See: https://nikitabobko.github.io/AeroSpace/goodies#3-highlight-focused-windows-with-colored-borders
+  'exec-and-forget ${HOME}/.config/aerospace/borders-toggle.sh',
   'layout --workspace Q --root h_accordion',
   'layout --workspace W --root h_accordion',
   'workspace S',
@@ -55,7 +59,11 @@ key-mapping.preset = 'qwerty'
 # See https://nikitabobko.github.io/AeroSpace/guide#on-focus-changed-callbacks
 # See https://nikitabobko.github.io/AeroSpace/commands#move-mouse
 on-focused-monitor-changed = ['move-mouse monitor-lazy-center']
-on-focus-changed = 'move-mouse window-lazy-center'
+# Borders visibility is conditional: see ~/.config/aerospace/borders-toggle.sh
+on-focus-changed = [
+  'move-mouse window-lazy-center',
+  'exec-and-forget ${HOME}/.config/aerospace/borders-toggle.sh',
+]
 
 # Gaps between windows (inner-*) and between monitor edges (outer-*).
 # Possible values:
@@ -65,13 +73,13 @@ on-focus-changed = 'move-mouse window-lazy-center'
 #                 Monitor pattern is the same as for 'workspace-to-monitor-force-assignment'.
 #                 See: https://nikitabobko.github.io/AeroSpace/guide#assign-workspaces-to-monitors
 [gaps]
-inner.horizontal = 1
-inner.vertical = 0
-outer.bottom = 0
-outer.top = 0
+inner.horizontal = 8
+inner.vertical = 6
+outer.bottom = 2
+outer.top = 2
 
-outer.right = 0
-outer.left = 0
+outer.right = 3
+outer.left = 3
 
 # Laptop (built-in display)
 [workspace-to-monitor-force-assignment]

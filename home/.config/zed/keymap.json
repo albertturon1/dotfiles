@@ -8,8 +8,8 @@
 [
   {
     "bindings": {
-      "cmd-e": "project_panel::ToggleFocus",
-      "cmd-g": "git_panel::ToggleFocus",
+      "cmd-e": "project_panel::Toggle",
+      "cmd-g": "git_panel::Toggle",
       "cmd-u": "terminal_panel::ToggleFocus",
     },
   },
