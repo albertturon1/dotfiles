@@ -1,13 +1,13 @@
 {
-  "release_microphone_while_idle": false,
+  "release_microphone_while_idle": true,
   "sound_effects": true,
   "sound_effect_volume": 0.5,
   "sound_theme": "classic",
-  "microphone": null,
-  "avoid_bluetooth_microphone": true,
-  "recording_audio_behavior": "do_nothing",
-  "recording_duck_volume": 0.2,
-  "pause_browser_media": false,
+  "microphone": "WH-1000XM4",
+  "avoid_bluetooth_microphone": false,
+  "recording_audio_behavior": "mute",
+  "recording_duck_volume": 0.1,
+  "pause_browser_media": true,
   "double_tap_lock": true,
   "double_tap_only": false,
   "shortcut_mode": "hold",
@@ -15,10 +15,6 @@
     "keys": [
       {
         "modifier": "control",
-        "side": "any"
-      },
-      {
-        "modifier": "command",
         "side": "any"
       },
       {
@@ -56,13 +52,17 @@
   "second_dictation_hotkey": null,
   "extra_dictation_hotkeys": [],
   "terminal_paste_hotkey": null,
-  "show_dock_icon": true,
+  "show_dock_icon": false,
   "transcription": {
     "model": "parakeet_v3",
     "language": "pl"
   },
   "transcription_device": "auto",
   "transcription_recents": [
+    {
+      "model": "cohere_transcribe",
+      "language": "pl"
+    },
     {
       "model": "parakeet_v3",
       "language": "pl"
@@ -113,10 +113,6 @@
           "side": "any"
         },
         {
-          "modifier": "command",
-          "side": "any"
-        },
-        {
           "code": 1,
           "label": "S"
         }
@@ -154,8 +150,8 @@
     "hex_microphone_strength": 1.0
   },
   "labs": {
-    "live_text": false,
-    "failure_notices": false,
+    "live_text": true,
+    "failure_notices": true,
     "live_typing": false,
     "live_chapters": false,
     "playground": false,
@@ -167,14 +163,14 @@
     "keep_on_clipboard": false,
     "copy_only": false,
     "return_to_app": false,
-    "spoken_formatting": false,
+    "spoken_formatting": true,
     "filler_words": false,
     "subtitle_export": false,
     "second_dictation_shortcut": false,
     "more_dictation_shortcuts": false,
     "terminal_paste_shortcut": false,
     "smart_spacing": false,
-    "spoken_symbols": false,
+    "spoken_symbols": true,
     "picker_sort_filter": false,
     "sided_modifier_chords": false,
     "tap_or_hold": false,
@@ -222,7 +218,10 @@
     "api_timestamps": false,
     "speakers_only": false,
     "app_model_switching": false,
-    "pause_menu": false
+    "pause_menu": false,
+    "groups": {
+      "dictation": true
+    }
   },
   "screenshots": {
     "hotkey": {
