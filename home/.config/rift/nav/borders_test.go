@@ -96,3 +96,19 @@ func TestShowAfterFocus(t *testing.T) {
 		t.Error("an empty target hides borders")
 	}
 }
+
+func TestShowAfterFocusOnFloatingWindow(t *testing.T) {
+	a, b, f := win("a"), win("b"), win("f")
+	root := box("horizontal_stack", a, b)
+	st := focusOn(root, a)
+	st.Floating = []WindowID{*f.WindowID}
+	if showAfterFocus(st, a.WindowID) {
+		t.Error("a lone stack slot hides borders even with a floating window around")
+	}
+	if !showAfterFocus(st, f.WindowID) {
+		t.Error("focusing the floating window: one visible tiled window plus the floating one shows borders")
+	}
+	if !a.IsSelected {
+		t.Error("prediction must leave the tree's selection alone")
+	}
+}

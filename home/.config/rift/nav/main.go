@@ -63,26 +63,37 @@ func layout() (*Node, error) {
 	return st.Tree, err
 }
 
-func selectedID() (int64, bool) {
-	root, err := layout()
+// snapshot is what "focus moved" means: the tree's selected node or the window rift reports as focused changed.
+// Both are needed: focusing a floating window leaves the tree's selection where it was.
+type snapshot struct {
+	node    int64
+	focused WindowID
+}
+
+func takeSnapshot() (snapshot, bool) {
+	st, err := queryState("")
 	if err != nil {
-		return 0, false
+		return snapshot{}, false
 	}
-	path := pathToSelected(root, nil)
+	path := pathToSelected(st.Tree, nil)
 	if path == nil {
-		return 0, false
+		return snapshot{}, false
 	}
-	return path[len(path)-1].NodeID, true
+	s := snapshot{node: path[len(path)-1].NodeID}
+	if st.Focused != nil {
+		s.focused = *st.Focused
+	}
+	return s, true
 }
 
 func run(args ...string) {
 	_ = exec.Command(rift, append([]string{"execute"}, args...)...).Run()
 }
 
-func waitForChange(before int64) bool {
+func waitForChange(before snapshot) bool {
 	for deadline := time.Now().Add(waitLimit); time.Now().Before(deadline); {
 		time.Sleep(pollInterval)
-		if id, ok := selectedID(); ok && id != before {
+		if now, ok := takeSnapshot(); ok && now != before {
 			return true
 		}
 	}
@@ -93,7 +104,7 @@ func focusWindow(w *WindowID) bool {
 	if w == nil {
 		return false
 	}
-	before, _ := selectedID()
+	before, _ := takeSnapshot()
 	arg, _ := json.Marshal(w)
 	run("window", "focus", "--window-id", string(arg))
 	return waitForChange(before)
@@ -108,51 +119,68 @@ func selectTopLevel() bool {
 	if len(path) <= 2 {
 		return true
 	}
+	before, _ := takeSnapshot()
 	run("layout", "ascend")
-	return waitForChange(path[len(path)-1].NodeID)
+	return waitForChange(before)
 }
 
 func step(dir string) bool {
 	if !selectTopLevel() {
 		return false
 	}
-	before, _ := selectedID()
+	before, _ := takeSnapshot()
 	run("window", "focus", dir)
 	return waitForChange(before)
 }
 
 func cycle(st State, cmd string) {
 	root := st.Tree
-	plan := planCycle(root, cmd)
+	plan := planCycle(st, cmd)
 	if plan.Kind == "" {
 		return
 	}
-	path := pathToSelected(root, nil)
-	if len(path) < 2 {
-		return
+	var target *WindowID
+	if plan.Kind == "float" {
+		target = plan.Window
+	} else {
+		target = firstWindow(root.Children[plan.Target])
 	}
-	current := path[1]
 	beginQuiet()
-	presetBorders(showAfterFocus(st, firstWindow(root.Children[plan.Target])))
+	presetBorders(showAfterFocus(st, target))
 	defer finishBorders()
 	switch plan.Kind {
 	case "step":
 		step(plan.Dir)
+	case "float":
+		focusWindow(plan.Window)
+	case "enter":
+		slot := root.Children[plan.Target]
+		if slot.NodeType == "window" || plan.Neighbor < 0 {
+			focusWindow(firstWindow(slot))
+		} else if focusWindow(firstWindow(root.Children[plan.Neighbor])) {
+			step(plan.Dir)
+		}
 	case "jump":
-		target := root.Children[plan.Target]
-		if target.NodeType == "window" {
-			focusWindow(target.WindowID)
+		slot := root.Children[plan.Target]
+		if slot.NodeType == "window" {
+			focusWindow(slot.WindowID)
 			return
 		}
-		towardStart, towardEnd := "left", "right"
+		dir := "right"
 		if axisOf(root) == 'v' {
-			towardStart, towardEnd = "up", "down"
+			dir = "down"
 		}
-		dir := towardEnd
 		if plan.Target == 0 {
-			dir = towardStart
+			dir = "left"
+			if axisOf(root) == 'v' {
+				dir = "up"
+			}
 		}
-		if root.Children[plan.Neighbor].NodeID == current.NodeID || focusWindow(firstWindow(root.Children[plan.Neighbor])) {
+		path := pathToSelected(root, nil)
+		if len(path) < 2 {
+			return
+		}
+		if root.Children[plan.Neighbor].NodeID == path[1].NodeID || focusWindow(firstWindow(root.Children[plan.Neighbor])) {
 			step(dir)
 		}
 	}
@@ -195,8 +223,9 @@ func descendToWindow(root *Node) *Node {
 		if last.NodeType == "window" || len(last.Children) == 0 {
 			return root
 		}
+		before, _ := takeSnapshot()
 		run("layout", "descend")
-		if !waitForChange(last.NodeID) {
+		if !waitForChange(before) {
 			return root
 		}
 		next, err := layout()
@@ -232,6 +261,9 @@ func main() {
 	st.Tree = descendToWindow(st.Tree)
 	switch cmd {
 	case "left", "right", "up", "down":
+		if focusIsFloating(st) {
+			return // a floating window is never in a group
+		}
 		switch decideMove(st.Tree, cmd) {
 		case Native:
 			run("window", "focus", cmd)

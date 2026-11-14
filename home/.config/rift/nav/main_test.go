@@ -82,3 +82,17 @@ func TestFindToolIn(t *testing.T) {
 		t.Errorf("an unknown tool falls back to the first directory, got %s", got)
 	}
 }
+
+func TestSnapshotSeesFocusMovingToAFloatingWindow(t *testing.T) {
+	tree := `{"container_tree":{"node_id":1,"node_type":"container","layout_kind":"horizontal","is_selected":false,"children":[{"node_id":2,"node_type":"window","is_selected":true,"children":[],"window_id":{"idx":7,"pid":9}}]},"floating_windows":[{"idx":3,"pid":4}],`
+	fakeRift(t, tree+`"focused_window":{"idx":7,"pid":9}}`, "0")
+	tiledFocus, ok := takeSnapshot()
+	if !ok {
+		t.Fatal("no snapshot")
+	}
+	fakeRift(t, tree+`"focused_window":{"idx":3,"pid":4}}`, "0")
+	floatFocus, _ := takeSnapshot()
+	if floatFocus == tiledFocus {
+		t.Error("focus moved to the floating window but the tree selection did not: snapshots must still differ")
+	}
+}

@@ -73,6 +73,8 @@ func TestDecideMove(t *testing.T) {
 	}
 }
 
+func tiledOnly(root *Node) State { return State{Tree: root} }
+
 func TestPlanCycle(t *testing.T) {
 	r := box("horizontal_stack", win("A"), box("horizontal", win("B"), win("C"), win("D")), win("E"), box("horizontal", win("F"), win("G")))
 	cases := []struct {
@@ -86,25 +88,102 @@ func TestPlanCycle(t *testing.T) {
 		{"E", "prev", CyclePlan{Kind: "step", Dir: "left", Target: 1}},
 	}
 	for _, c := range cases {
-		if got := planCycle(selectNamed(r, c.sel), c.cmd); got != c.want {
+		if got := planCycle(tiledOnly(selectNamed(r, c.sel)), c.cmd); got != c.want {
 			t.Errorf("%s %s: got %+v want %+v", c.sel, c.cmd, got, c.want)
 		}
 	}
 	two := box("horizontal", win("A"), win("B"))
-	if got := planCycle(selectNamed(two, "B"), "next"); got != (CyclePlan{Kind: "jump", Target: 0, Neighbor: 1}) {
+	// With two slots the wrap target is the neighbour, so a plain step is enough.
+	if got := planCycle(tiledOnly(selectNamed(two, "B")), "next"); got != (CyclePlan{Kind: "step", Dir: "left", Target: 0}) {
 		t.Errorf("two items wrap: %+v", got)
 	}
-	if got := planCycle(selectNamed(box("horizontal", win("A")), "A"), "next"); got.Kind != "" {
+	if got := planCycle(tiledOnly(selectNamed(box("horizontal", win("A")), "A")), "next"); got.Kind != "" {
 		t.Errorf("single: %+v", got)
 	}
-	if got := planCycle(box("horizontal"), "next"); got.Kind != "" {
+	if got := planCycle(tiledOnly(box("horizontal")), "next"); got.Kind != "" {
 		t.Errorf("empty: %+v", got)
 	}
 	v := box("vertical", win("A"), win("B"), win("C"))
-	if got := planCycle(selectNamed(v, "A"), "next"); got != (CyclePlan{Kind: "step", Dir: "down", Target: 1}) {
+	if got := planCycle(tiledOnly(selectNamed(v, "A")), "next"); got != (CyclePlan{Kind: "step", Dir: "down", Target: 1}) {
 		t.Errorf("vertical root: %+v", got)
 	}
-	if got := planCycle(selectNamed(v, "C"), "next"); got != (CyclePlan{Kind: "jump", Target: 0, Neighbor: 1}) {
+	if got := planCycle(tiledOnly(selectNamed(v, "C")), "next"); got != (CyclePlan{Kind: "jump", Target: 0, Neighbor: 1}) {
 		t.Errorf("vertical wrap: %+v", got)
+	}
+}
+
+func TestPlanCycleWithFloatingWindows(t *testing.T) {
+	f1, f2 := WindowID{Idx: 901, Pid: 1}, WindowID{Idx: 902, Pid: 1}
+	one := func() (*Node, State) {
+		root := box("horizontal", win("A"))
+		return root, State{Tree: selectNamed(root, "A"), Floating: []WindowID{f1}}
+	}
+	// One tiled window and one floating window: backtick must switch between them (the case from workspace S).
+	_, st := one()
+	if got := planCycle(st, "next"); got.Kind != "float" || *got.Window != f1 {
+		t.Errorf("tiled -> floating: %+v", got)
+	}
+	st.Focused = &f1
+	if got := planCycle(st, "next"); got.Kind != "enter" || got.Target != 0 || got.Neighbor != -1 {
+		t.Errorf("floating -> the only tiled slot: %+v", got)
+	}
+
+	// Two tiled windows and one floating: tiled order first, then the floating window, then back to the first slot.
+	build := func() State {
+		root := box("horizontal_stack", win("A"), win("B"))
+		return State{Tree: root, Floating: []WindowID{f1}}
+	}
+	st = build()
+	selectNamed(st.Tree, "B")
+	if got := planCycle(st, "next"); got.Kind != "float" || *got.Window != f1 {
+		t.Errorf("last tiled slot next: %+v", got)
+	}
+	selectNamed(st.Tree, "A")
+	if got := planCycle(st, "prev"); got.Kind != "float" || *got.Window != f1 {
+		t.Errorf("first tiled slot prev: %+v", got)
+	}
+	st.Focused = &f1
+	if got := planCycle(st, "next"); got.Kind != "enter" || got.Target != 0 || got.Neighbor != 1 || got.Dir != "left" {
+		t.Errorf("floating next enters slot 0 from slot 1: %+v", got)
+	}
+	if got := planCycle(st, "prev"); got.Kind != "enter" || got.Target != 1 || got.Neighbor != 0 || got.Dir != "right" {
+		t.Errorf("floating prev enters slot 1 from slot 0: %+v", got)
+	}
+
+	// Floating windows only reach each other; with no tiled windows they cycle among themselves.
+	empty := State{Tree: box("horizontal"), Floating: []WindowID{f1, f2}, Focused: &f1}
+	if got := planCycle(empty, "next"); got.Kind != "float" || *got.Window != f2 {
+		t.Errorf("floating -> floating: %+v", got)
+	}
+	empty.Focused = &f2
+	if got := planCycle(empty, "next"); got.Kind != "float" || *got.Window != f1 {
+		t.Errorf("floating wrap: %+v", got)
+	}
+	// A focused floating window the tree does not know must not be confused with the tree's selection.
+	root := box("horizontal", win("A"), win("B"))
+	both := State{Tree: selectNamed(root, "A"), Floating: []WindowID{f1}, Focused: &f1}
+	if got := planCycle(both, "next"); got.Kind != "enter" || got.Target != 0 {
+		t.Errorf("focus on the floating window wins over the tree selection: %+v", got)
+	}
+	// Nothing focused anywhere: do nothing.
+	if got := planCycle(State{Tree: box("horizontal", win("A"), win("B")), Floating: []WindowID{f1}}, "next"); got.Kind != "" {
+		t.Errorf("nothing selected: %+v", got)
+	}
+}
+
+func TestFocusIsFloating(t *testing.T) {
+	f := WindowID{Idx: 901, Pid: 1}
+	tiled := WindowID{Idx: 5, Pid: 1}
+	st := State{Tree: box("horizontal"), Floating: []WindowID{f}}
+	if focusIsFloating(st) {
+		t.Error("nothing focused is not floating")
+	}
+	st.Focused = &tiled
+	if focusIsFloating(st) {
+		t.Error("a tiled focus is not floating")
+	}
+	st.Focused = &f
+	if !focusIsFloating(st) {
+		t.Error("focus on a floating window must be recognised")
 	}
 }

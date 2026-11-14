@@ -28,10 +28,11 @@ const (
 )
 
 type CyclePlan struct {
-	Kind     string // "", "step" or "jump"
-	Dir      string // for "step"
-	Target   int    // top-level index to land on
-	Neighbor int    // for "jump": top-level index next to the target
+	Kind     string    // "", "step", "jump", "float" or "enter"
+	Dir      string    // step and enter: direction towards the target slot
+	Target   int       // step, jump, enter: top-level slot to land on
+	Neighbor int       // jump, enter: slot next to the target, used to enter a group; -1 when there is none
+	Window   *WindowID // float: the floating window to focus
 }
 
 func pathToSelected(n *Node, trail []*Node) []*Node {
@@ -108,25 +109,78 @@ func decideMove(root *Node, dir string) MoveAction {
 	return Stay
 }
 
-func planCycle(root *Node, cmd string) CyclePlan {
-	path := pathToSelected(root, nil)
-	count := len(root.Children)
-	if len(path) < 2 || count < 2 {
+// focusIsFloating reports whether rift's focused window is one of the floating windows. The tree's own selection
+// does not follow focus to a floating window, so it cannot be used to tell where focus is.
+func focusIsFloating(st State) bool {
+	if st.Focused == nil {
+		return false
+	}
+	for _, f := range st.Floating {
+		if f == *st.Focused {
+			return true
+		}
+	}
+	return false
+}
+
+// currentItem numbers the things next|prev walk over: the top-level slots, then the floating windows.
+// It returns -1 when nothing is focused.
+func currentItem(st State) int {
+	tiled := len(st.Tree.Children)
+	if st.Focused != nil {
+		for i, f := range st.Floating {
+			if f == *st.Focused {
+				return tiled + i
+			}
+		}
+	}
+	path := pathToSelected(st.Tree, nil)
+	if len(path) < 2 {
+		return -1
+	}
+	return indexOf(st.Tree.Children, path[1].NodeID)
+}
+
+// planCycle decides how to reach the next or previous item: top-level slots in tree order, then floating windows,
+// wrapping from the last item to the first.
+func planCycle(st State, cmd string) CyclePlan {
+	root := st.Tree
+	tiled := len(root.Children)
+	total := tiled + len(st.Floating)
+	cur := currentItem(st)
+	if total < 2 || cur < 0 {
 		return CyclePlan{}
 	}
-	i := indexOf(root.Children, path[1].NodeID)
+	delta := 1
+	if cmd != "next" {
+		delta = -1
+	}
+	target := (cur + delta + total) % total
 	forward, backward := "right", "left"
 	if axisOf(root) == 'v' {
 		forward, backward = "down", "up"
 	}
-	if cmd == "next" {
-		if i < count-1 {
-			return CyclePlan{Kind: "step", Dir: forward, Target: i + 1}
+	if target >= tiled {
+		return CyclePlan{Kind: "float", Window: &st.Floating[target-tiled]}
+	}
+	if cur >= tiled {
+		neighbor, dir := target-1, forward
+		if target == 0 {
+			neighbor, dir = 1, backward
 		}
+		if neighbor < 0 || neighbor >= tiled {
+			neighbor = -1
+		}
+		return CyclePlan{Kind: "enter", Dir: dir, Target: target, Neighbor: neighbor}
+	}
+	if target == cur+1 {
+		return CyclePlan{Kind: "step", Dir: forward, Target: target}
+	}
+	if target == cur-1 {
+		return CyclePlan{Kind: "step", Dir: backward, Target: target}
+	}
+	if target == 0 {
 		return CyclePlan{Kind: "jump", Target: 0, Neighbor: 1}
 	}
-	if i > 0 {
-		return CyclePlan{Kind: "step", Dir: backward, Target: i - 1}
-	}
-	return CyclePlan{Kind: "jump", Target: count - 1, Neighbor: count - 2}
+	return CyclePlan{Kind: "jump", Target: target, Neighbor: target - 1}
 }

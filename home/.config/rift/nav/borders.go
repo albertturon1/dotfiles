@@ -103,6 +103,13 @@ func cloneNode(n *Node) *Node {
 
 // showAfterFocus predicts shouldShow once focus has moved to the target window, without touching the state.
 func showAfterFocus(s State, target *WindowID) bool {
+	if target != nil {
+		for _, f := range s.Floating {
+			if f == *target { // focusing a floating window leaves the tree's selection alone
+				return shouldShow(State{Tree: s.Tree, Floating: s.Floating, Focused: target})
+			}
+		}
+	}
 	tree := cloneNode(s.Tree)
 	var mark func(n *Node)
 	mark = func(n *Node) {
