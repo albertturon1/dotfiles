@@ -1,0 +1,4 @@
+[submodule "vendor/rift"]
+	path = vendor/rift
+	url = https://github.com/albertturon1/rift.git
+	branch = dotfiles
